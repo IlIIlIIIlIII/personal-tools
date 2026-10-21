@@ -2,12 +2,18 @@ using System.Text.Json;
 
 namespace PersonalTools;
 
-public sealed record HdrMonitor(string Id, string Name, bool Primary, bool Supported, bool Enabled, string? Error = null);
+public sealed record HdrMonitor(string Id, string Name, bool Primary, bool Supported, bool Enabled, string? Error = null, bool Internal = false);
 public sealed record HdrProgram(Guid Id, string Name, string Path, bool Enabled = true);
 public sealed record HdrProcess(string Key, string Path);
 public sealed record HdrProgramStatus(HdrProgram Program, bool Running);
-public sealed record HdrSnapshot(HdrMonitor[] Monitors, HdrProgramStatus[] Programs, string? Error, string? Warning = null, DisplayPowerSnapshot? DisplayPower = null);
+// One monitor whose HDR automation owns a pending restore, with the programs keeping it.
+public sealed record HdrActive(string MonitorId, bool Original, bool Manual, DateTimeOffset? StartedAt, string[] Programs);
+// DisplayPower stays for the widget wire format; the app no longer fills it.
+public sealed record HdrSnapshot(HdrMonitor[] Monitors, HdrProgramStatus[] Programs, string? Error, string? Warning = null, DisplayPowerSnapshot? DisplayPower = null,
+    bool Enabled = true, HdrActive[]? Active = null);
 public sealed record HdrRequest(string Command, string? MonitorId = null, bool Enabled = false);
+public sealed record HdrCandidate(string Name, string Path, bool Launcher);
+public sealed record HdrSettings(bool Enabled = true);
 
 public interface IHdrDisplay
 {
@@ -20,6 +26,7 @@ public sealed class HdrSession
     public string MonitorId { get; set; } = "";
     public bool Original { get; set; }
     public bool Manual { get; set; }
+    public DateTimeOffset? StartedAt { get; set; }
     public string? Failure { get; set; }
     public List<string> Owners { get; set; } = [];
 }
@@ -39,6 +46,17 @@ internal sealed class HdrProgramStore : IHdrProgramStore
 {
     public List<HdrProgram> Load() => HdrFiles.Read<List<HdrProgram>>("programs.json", () => []);
     public void Save(List<HdrProgram> programs) => HdrFiles.Write("programs.json", programs);
+}
+
+internal interface IHdrSettingsStore
+{
+    HdrSettings Load();
+    void Save(HdrSettings settings);
+}
+internal sealed class HdrSettingsStore : IHdrSettingsStore
+{
+    public HdrSettings Load() => HdrFiles.Read("settings.json", () => new HdrSettings());
+    public void Save(HdrSettings settings) => HdrFiles.Write("settings.json", settings);
 }
 
 internal static class HdrFiles

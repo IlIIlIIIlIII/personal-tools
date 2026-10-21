@@ -68,10 +68,16 @@ internal sealed class HdrDisplay : IHdrDisplay
                 else if ((old.Flags & 8) != 0) message = "Windows에서 HDR을 제한하고 있습니다.";
             }
             else message = new Win32Exception(error).Message;
-            var label = string.IsNullOrWhiteSpace(name.FriendlyName) ? "디스플레이" : name.FriendlyName;
-            resultList.Add(new(path, new(name.DevicePath, $"{label} · {path.Source.Id + 1}", primary, supported, enabled, message), modern));
+            // DISPLAYCONFIG_OUTPUT_TECHNOLOGY_INTERNAL, DISPLAYPORT_EMBEDDED or UDI_EMBEDDED: a laptop panel.
+            bool builtIn = path.Target.Technology is 0x80000000u or 11 or 13;
+            var label = string.IsNullOrWhiteSpace(name.FriendlyName) ? builtIn ? "내장 디스플레이" : "디스플레이" : name.FriendlyName;
+            resultList.Add(new(path, new(name.DevicePath, label, primary, supported, enabled, message, builtIn), modern));
         }
-        return resultList.DistinctBy(x => x.Monitor.Id).ToList();
+        var unique = resultList.DistinctBy(x => x.Monitor.Id).ToList();
+        // Same-model monitors keep their source number so they stay distinguishable.
+        var repeated = unique.GroupBy(x => x.Monitor.Name).Where(g => g.Count() > 1).Select(g => g.Key).ToHashSet();
+        return unique.Select(x => repeated.Contains(x.Monitor.Name)
+            ? x with { Monitor = x.Monitor with { Name = $"{x.Monitor.Name} · {x.Path.Source.Id + 1}" } } : x).ToList();
     }
 
     private static bool SupportsPq(string devicePath)

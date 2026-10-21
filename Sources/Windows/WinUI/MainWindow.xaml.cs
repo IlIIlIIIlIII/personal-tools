@@ -10,6 +10,7 @@ public sealed partial class MainWindow : Window
     private readonly ClipboardController clipboard;
     private readonly AudioController audio;
     private readonly WindowSwitchController windowSwitch;
+    private readonly HdrController hdr = new();
     private ClipboardPopup? clipboardPopup;
     private Task? clipboardStartup;
     private TrayIcon? tray;
@@ -49,6 +50,7 @@ public sealed partial class MainWindow : Window
         };
         SwitchPage.Configure(windowSwitch);
         SoundsPage.Configure(audio, this);
+        HdrsPage.Configure(hdr, this);
         BridgePage.Configure(this);
         DiagPage.Configure(audio, clipboard, windowSwitch, BridgePage);
         Navigation.SelectedItem = ClipboardNav;
@@ -70,6 +72,7 @@ public sealed partial class MainWindow : Window
         clipboardStartup = clipboard.StartAsync(WindowNative.GetWindowHandle(this));
         audio.Start();
         windowSwitch.Start();
+        hdr.Start();
         if (!inTray || tray?.Available != true) Show();
         // Start even when the window stays hidden in the tray; the page does not need to load.
         _ = BridgePage.StartBridgeAsync();
@@ -85,6 +88,7 @@ public sealed partial class MainWindow : Window
         ClipSettingsPage.Visibility = tag == "clipboard-settings" ? Visibility.Visible : Visibility.Collapsed;
         SwitchPage.Visibility = tag == "windows" ? Visibility.Visible : Visibility.Collapsed;
         SoundsPage.Visibility = tag == "sound" ? Visibility.Visible : Visibility.Collapsed;
+        HdrsPage.Visibility = tag == "hdr" ? Visibility.Visible : Visibility.Collapsed;
         BridgePage.Visibility = tag == "antigravity" ? Visibility.Visible : Visibility.Collapsed;
         DiagPage.Visibility = tag == "diagnostics" ? Visibility.Visible : Visibility.Collapsed;
         if (tag == "clipboard-settings") ClipSettingsPage.Load();
@@ -110,6 +114,8 @@ public sealed partial class MainWindow : Window
         quitting = true;
         try
         {
+            // Restores HDR that automation turned on for programs still running.
+            try { await hdr.DisposeAsync(); } catch { }
             if (clipboardStartup is not null) await clipboardStartup;
             await ClipsPage.ShutdownAsync();
             if (clipboardPopup is not null) await clipboardPopup.ShutdownAsync();

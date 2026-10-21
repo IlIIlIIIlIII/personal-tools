@@ -25,10 +25,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <!-- Set aside for now (2026-10-20 Windows scope): HDR, display power, vLLM and the microphone shortcut. -->
+  <!-- Set aside for now (2026-10-20 Windows scope): display power, vLLM and the microphone shortcut.
+       Auto-HDR came back on 2026-10-21; DisplayPowerModels.cs stays only for the HDR snapshot wire format. -->
   <ItemGroup>
-    <Compile Remove="Hdr*.cs;DisplayPower*.cs;Vllm*.cs;MicrophoneMute.cs" />
-    <Page Remove="HdrPage.xaml;VllmPage.xaml" />
+    <Compile Remove="DisplayPowerMonitor.cs;Vllm*.cs;MicrophoneMute.cs" />
+    <Page Remove="VllmPage.xaml" />
     <None Remove="DisplayPowerProbe.ps1;VllmStart.py" />
   </ItemGroup>
   <ItemGroup>

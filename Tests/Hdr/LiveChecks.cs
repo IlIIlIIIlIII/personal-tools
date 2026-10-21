@@ -41,10 +41,14 @@ internal static class LiveChecks
             }
         }
     }
-    private static void StartApp(string path) => Process.Start(new ProcessStartInfo(path, "--startup") { UseShellExecute = false, CreateNoWindow = true })?.Dispose();
+    // Shell execute so the long-lived app does not inherit this test's stdout and keep its pipe open.
+    private static void StartApp(string path) => Process.Start(new ProcessStartInfo(path, "--startup") { UseShellExecute = true })?.Dispose();
     public static async Task RunAsync()
     {
-        string app = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "PersonalTools", "ui", "PersonalToolsWindows.exe");
+        // The installer puts the app under Program Files; older portable installs used LocalAppData.
+        string app = new[] { Environment.SpecialFolder.ProgramFiles, Environment.SpecialFolder.LocalApplicationData }
+            .Select(root => Path.Combine(Environment.GetFolderPath(root), root == Environment.SpecialFolder.ProgramFiles ? "" : "Programs", "PersonalTools", "ui", "PersonalToolsWindows.exe"))
+            .First(File.Exists);
         var baseline = await Request(new("read"));
         if (baseline.Programs.Any(p => p.Running)) throw new Exception("Close registered games before hardware tests.");
         var primary = baseline.Monitors.First(m => m.Primary && m.Supported && m.Error is null);

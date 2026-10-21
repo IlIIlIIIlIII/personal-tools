@@ -8,6 +8,7 @@ public sealed class HdrAutomation
     private readonly List<HdrSession> sessions;
     private readonly HashSet<string> seen = [];
     public string? Error { get; private set; }
+    public IReadOnlyList<HdrSession> Sessions => sessions;
     public HdrAutomation(IHdrDisplay display, IHdrJournal journal)
     {
         this.display = display;
@@ -42,11 +43,11 @@ public sealed class HdrAutomation
         foreach (var key in active.Where(key => !seen.Contains(key)))
         {
             if (primary is null) { Error = "주 모니터를 찾지 못했습니다."; continue; }
-            if (!primary.Supported || primary.Error is not null) { Error = primary.Error ?? "주 모니터가 HDR을 지원하지 않습니다."; continue; }
+            if (!primary.Supported || primary.Error is not null) { Error = primary.Error ?? "주 모니터가 HDR을 지원하지 않습니다. HDR 모니터를 주 모니터로 설정하면 바로 적용합니다."; continue; }
             var session = sessions.FirstOrDefault(s => s.MonitorId == primary.Id);
             if (session is null)
             {
-                session = new HdrSession { MonitorId = primary.Id, Original = primary.Enabled, Owners = [key] };
+                session = new HdrSession { MonitorId = primary.Id, Original = primary.Enabled, StartedAt = DateTimeOffset.Now, Owners = [key] };
                 sessions.Add(session);
                 journal.Save(sessions); // Durable intent BEFORE changing the display.
                 try { if (!primary.Enabled) display.Set(primary.Id, true); }

@@ -226,11 +226,12 @@ if (args.Contains("--integration"))
 {
     await DisplayPowerChecks.RunAsync();
     var d = new Displays();
-    // Use a real child process and real watcher/pipe, but never modify physical HDR or user settings.
+    // Use a real child process, real process polling and pipe, but never modify physical HDR or user settings.
     string exe = Path.Combine(AppContext.BaseDirectory, "HdrTests.exe");
     var store = new ProgramStore([new(Guid.NewGuid(), "Fixture", exe)]);
     string testPipe = HdrWire.PipeName + ".test." + Guid.NewGuid().ToString("N");
-    await using var controller = new HdrController(d, new Journal(), store, testPipe);
+    var settings = new SettingsStore();
+    await using var controller = new HdrController(d, new Journal(), store, testPipe, settings);
     controller.Start();
     await Task.Delay(1000);
     // The parent uses the same executable. Register a copied apphost, which loads the same DLL.
@@ -254,8 +255,31 @@ if (args.Contains("--integration"))
     limit.Restart();
     while (controller.Snapshot.Programs.Any(p => p.Running) && limit.Elapsed < TimeSpan.FromSeconds(8)) await Task.Delay(50);
     Check(!controller.Snapshot.Programs.Any(p => p.Running) && !d.On, "real process stop/manual persistence failed");
-    File.Delete(childExe);
     Console.WriteLine("PASS live process start/stop detection, actual named pipe command, manual override persistence");
+
+    // The master switch releases a running session and ignores new launches until it is back on.
+    using (var first = Process.Start(new ProcessStartInfo(childExe, "--fixture") { UseShellExecute = false, CreateNoWindow = true })!)
+    {
+        limit.Restart();
+        while (controller.Snapshot.Active is not [_] && limit.Elapsed < TimeSpan.FromSeconds(8)) await Task.Delay(50);
+        Check(d.On && controller.Snapshot.Active is [{ Programs: ["Fixture"], StartedAt: not null }], "session not reported: " + controller.Snapshot.Error);
+        await controller.SetEnabledAsync(false);
+        Check(!d.On && settings.Saved is { Enabled: false } && controller.Snapshot is { Enabled: false, Active: [] }, "switching off did not restore");
+        await first.WaitForExitAsync();
+    }
+    using (var second = Process.Start(new ProcessStartInfo(childExe, "--fixture") { UseShellExecute = false, CreateNoWindow = true })!)
+    {
+        await Task.Delay(1500);
+        Check(!d.On, "switched off but still applied");
+        await controller.SetEnabledAsync(true);
+        Check(d.On, "switching on did not apply to a running program");
+        await second.WaitForExitAsync();
+    }
+    limit.Restart();
+    while (d.On && limit.Elapsed < TimeSpan.FromSeconds(8)) await Task.Delay(50);
+    Check(!d.On, "restore after re-enabling failed");
+    File.Delete(childExe);
+    Console.WriteLine("PASS master switch releases, blocks and re-applies");
 }
 
 sealed class Displays : IHdrDisplay
@@ -293,6 +317,12 @@ sealed class Journal : IHdrJournal
         if (Fail) throw new IOException("disk failure");
         saved = JsonSerializer.Serialize(sessions);
     }
+}
+sealed class SettingsStore : IHdrSettingsStore
+{
+    public HdrSettings? Saved;
+    public HdrSettings Load() => Saved ?? new();
+    public void Save(HdrSettings settings) => Saved = settings;
 }
 sealed class ProgramStore(List<HdrProgram> items) : IHdrProgramStore
 {

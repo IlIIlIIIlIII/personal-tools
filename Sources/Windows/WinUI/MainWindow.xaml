@@ -18,6 +18,7 @@
         <NavigationViewItem x:Name="ClipboardNav" Content="클립보드" Tag="clipboard"><NavigationViewItem.Icon><FontIcon Glyph="&#xE77F;"/></NavigationViewItem.Icon></NavigationViewItem>
         <NavigationViewItem Content="창 빠른 전환" Tag="windows"><NavigationViewItem.Icon><FontIcon Glyph="&#xE7C4;"/></NavigationViewItem.Icon></NavigationViewItem>
         <NavigationViewItem Content="사운드" Tag="sound"><NavigationViewItem.Icon><FontIcon Glyph="&#xE767;"/></NavigationViewItem.Icon></NavigationViewItem>
+        <NavigationViewItem Content="자동 HDR" Tag="hdr"><NavigationViewItem.Icon><FontIcon Glyph="&#xE7F4;"/></NavigationViewItem.Icon></NavigationViewItem>
         <NavigationViewItem x:Name="BridgeNav" Content="Antigravity 브릿지" Tag="antigravity"><NavigationViewItem.Icon><FontIcon Glyph="&#xE774;"/></NavigationViewItem.Icon></NavigationViewItem>
       </NavigationView.MenuItems>
       <NavigationView.FooterMenuItems>
@@ -29,6 +30,7 @@
         <local:ClipboardSettingsPage x:Name="ClipSettingsPage" Visibility="Collapsed"/>
         <local:WindowSwitchPage x:Name="SwitchPage" Visibility="Collapsed"/>
         <local:SoundPage x:Name="SoundsPage" Visibility="Collapsed"/>
+        <local:HdrPage x:Name="HdrsPage" Visibility="Collapsed"/>
         <local:AntigravityPage x:Name="BridgePage" Visibility="Collapsed"/>
         <local:DiagnosticsPage x:Name="DiagPage" Visibility="Collapsed"/>
       </Grid>

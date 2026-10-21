@@ -1,5 +1,10 @@
 # Windows 오디오 버전
 
+## 2026-10-21 자동 HDR
+
+- **자동 HDR** 메뉴를 사운드 아래에 다시 넣었습니다. 등록한 프로그램이 시작되면 그때의 주 모니터 HDR을 켜고, 모두 종료되면 실행 전 상태로 되돌립니다. 전체 켜기/끄기, 프로그램별 켜기/끄기, 주 모니터 수동 전환을 제공합니다. 시안: https://claude.ai/artifact/6HEp13fuWcEHtSj3sYAcNK, 동작과 검증: [windows-hdr.md](windows-hdr.md).
+- 예전 HDR 화면에 있던 화면 꺼짐 방지 조회는 넣지 않았습니다. HDR 위젯 패키지는 별도이며 기본 설치에 포함되지 않습니다.
+
 ## 2026-10-20 Windows 범위와 변경
 
 - 화면: 클립보드, 창 빠른 전환, 사운드, Antigravity 브릿지, 진단. 시안은 `docs/design/windows-fluent-2026-10-20`.
