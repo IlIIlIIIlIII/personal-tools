@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+ xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+ xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+ xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
+ xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+ IgnorableNamespaces="uap uap3 com rescap">
+  <Identity Name="PersonalTools.HdrWidget" Publisher="CN=PersonalTools Local" Version="1.0.7.0" ProcessorArchitecture="x64"/>
+  <Properties><DisplayName>Personal Tools</DisplayName><PublisherDisplayName>Personal Tools</PublisherDisplayName><Logo>Assets\StoreLogo.png</Logo></Properties>
+  <Dependencies><TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.22000.0" MaxVersionTested="10.0.26100.0"/></Dependencies>
+  <Resources><Resource Language="ko-KR"/><Resource Language="en-US"/></Resources>
+  <Applications>
+    <Application Id="HdrWidget" Executable="HdrWidget.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements DisplayName="Personal Tools HDR" Description="모니터별 HDR 제어" BackgroundColor="transparent" Square150x150Logo="Assets\Logo.png" Square44x44Logo="Assets\SmallLogo.png"/>
+      <Extensions>
+        <com:Extension Category="windows.comServer"><com:ComServer><com:ExeServer Executable="HdrWidget.exe" DisplayName="Personal Tools HDR"><com:Class Id="73CC5362-5F43-44EA-A82B-1DD4CF8796C5" DisplayName="Personal Tools HDR"/></com:ExeServer></com:ComServer></com:Extension>
+        <uap3:Extension Category="windows.appExtension">
+          <uap3:AppExtension Name="com.microsoft.windows.widgets" DisplayName="Personal Tools" Id="PersonalToolsHdr" PublicFolder="Public">
+            <uap3:Properties><WidgetProvider>
+              <ProviderIcons><Icon Path="Assets\SmallLogo.png"/></ProviderIcons>
+              <Activation><CreateInstance ClassId="73CC5362-5F43-44EA-A82B-1DD4CF8796C5"/></Activation>
+              <Definitions><Definition Id="PersonalToolsHdr" DisplayName="Personal Tools HDR" Description="모니터별 HDR을 켜거나 끕니다." AllowMultiple="true">
+                <Capabilities><Capability><Size Name="small"/></Capability><Capability><Size Name="medium"/></Capability><Capability><Size Name="large"/></Capability></Capabilities>
+                <ThemeResources><Icons><Icon Path="Assets\SmallLogo.png"/></Icons><Screenshots><Screenshot Path="Assets\Preview.png" DisplayAltText="모니터별 HDR 상태와 켜기 및 끄기 버튼"/></Screenshots></ThemeResources>
+              </Definition>
+              <Definition Id="PersonalToolsDisplayPower" DisplayName="화면 꺼짐 방지" Description="화면 꺼짐을 막는 프로세스·서비스·드라이버의 요청을 확인합니다." AllowMultiple="true">
+                <Capabilities><Capability><Size Name="small"/></Capability><Capability><Size Name="medium"/></Capability><Capability><Size Name="large"/></Capability></Capabilities>
+                <ThemeResources><Icons><Icon Path="Assets\SmallLogo.png"/></Icons><Screenshots><Screenshot Path="Assets\PowerPreview.png" DisplayAltText="화면 꺼짐 방지 요청 수, 프로세스와 사유"/></Screenshots></ThemeResources>
+              </Definition>
+              <Definition Id="PersonalToolsVllm" DisplayName="Personal Tools vLLM" Description="Qwen3.8 로컬 모델을 시작하고 연결 상태를 확인합니다." AllowMultiple="true">
+                <Capabilities><Capability><Size Name="small"/></Capability><Capability><Size Name="medium"/></Capability><Capability><Size Name="large"/></Capability></Capabilities>
+                <ThemeResources><Icons><Icon Path="Assets\SmallLogo.png"/></Icons><Screenshots><Screenshot Path="Assets\VllmPreview.png" DisplayAltText="Qwen3.8 모델 상태와 vLLM 시작 버튼"/></Screenshots></ThemeResources>
+              </Definition></Definitions>
+            </WidgetProvider></uap3:Properties>
+          </uap3:AppExtension>
+        </uap3:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+  <Capabilities><rescap:Capability Name="runFullTrust"/></Capabilities>
+</Package>
+

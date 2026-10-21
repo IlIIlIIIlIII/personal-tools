@@ -4,13 +4,22 @@
 #include "SignalOps.hpp"
 #include <windows.h>
 #include <array>
+#include <cmath>
 #include <filesystem>
 #include <cstring>
 #include <stdexcept>
+#include <string>
 
 namespace personaltools::win {
+// Stage codes are published in the shared meter; keep the values stable for the UI.
+enum class NpuStage:int{none=0,runtime=1,core=2,compile=3,request=4,inference=5,output=6,unknown=7};
+struct NpuFailure:std::runtime_error{
+    NpuStage stage;
+    NpuFailure(NpuStage s,const std::string& what):std::runtime_error(what),stage(s){}
+};
 class DtlnNpu {
     using Status=int;
+    using LastError=const char*(__cdecl*)();
     using Create=Status(__cdecl*)(void**);
     using Compile=Status(__cdecl*)(const void*,const char*,const char*,size_t,void**,...);
     using Request=Status(__cdecl*)(const void*,void**);
@@ -26,13 +35,18 @@ class DtlnNpu {
     Create create_=nullptr;Compile compile_=nullptr;Request request_=nullptr;
     Tensor input_=nullptr,output_=nullptr;Data data_=nullptr;Infer infer_=nullptr;
     Free coreFree_=nullptr,modelFree_=nullptr,requestFree_=nullptr,tensorFree_=nullptr;
+    LastError lastError_=nullptr;
     signal::FFTSetup fft_=nullptr;
     std::array<float,512> mic_{},ref_{},overlap_{},real_{},imag_{},mr_{},mi_{};
     template<class T> void load(T& target,const char* name){
         target=reinterpret_cast<T>(GetProcAddress(dll_,name));
-        if(!target)throw std::runtime_error(name);
+        if(!target)throw NpuFailure(NpuStage::runtime,std::string("Missing OpenVINO export ")+name);
     }
-    static void check(Status status){if(status!=0)throw std::runtime_error("OpenVINO NPU error "+std::to_string(status));}
+    void check(Status status,NpuStage stage)const{
+        if(status==0)return;
+        const char* detail=lastError_?lastError_():nullptr;
+        throw NpuFailure(stage,"OpenVINO NPU error "+std::to_string(status)+(detail&&*detail?std::string(": ")+detail:std::string()));
+    }
 public:
     DtlnNpu()=default;
     DtlnNpu(const DtlnNpu&)=delete;
@@ -47,7 +61,7 @@ public:
     void open(const std::filesystem::path& directory){
         dll_=LoadLibraryExW((directory/L"openvino_c.dll").c_str(),nullptr,
                            LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR|LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
-        if(!dll_)throw std::runtime_error("Cannot load OpenVINO C runtime");
+        if(!dll_)throw NpuFailure(NpuStage::runtime,"Cannot load OpenVINO C runtime (Windows error "+std::to_string(GetLastError())+")");
         load(create_,"ov_core_create");load(compile_,"ov_core_compile_model_from_file");
         load(request_,"ov_compiled_model_create_infer_request");
         load(input_,"ov_infer_request_get_input_tensor_by_index");
@@ -55,14 +69,15 @@ public:
         load(data_,"ov_tensor_data");load(infer_,"ov_infer_request_infer");
         load(coreFree_,"ov_core_free");load(modelFree_,"ov_compiled_model_free");
         load(requestFree_,"ov_infer_request_free");load(tensorFree_,"ov_tensor_free");
-        check(create_(&core_));
+        lastError_=reinterpret_cast<LastError>(GetProcAddress(dll_,"ov_get_last_err_msg"));
+        check(create_(&core_),NpuStage::core);
         for(int i=0;i<2;++i){
             auto path=(directory/("dtln_aec_256_"+std::to_string(i+1)+".tflite")).string();
-            check(compile_(core_,path.c_str(),"NPU",0,&models_[i]));
-            check(request_(models_[i],&requests_[i]));
+            check(compile_(core_,path.c_str(),"NPU",0,&models_[i]),NpuStage::compile);
+            check(request_(models_[i],&requests_[i]),NpuStage::request);
             for(size_t j=0;j<5;++j){
-                check(j<3?input_(requests_[i],j,&tensors_[i][j]):output_(requests_[i],j-3,&tensors_[i][j]));
-                check(data_(tensors_[i][j],reinterpret_cast<void**>(&values_[i][j])));
+                check(j<3?input_(requests_[i],j,&tensors_[i][j]):output_(requests_[i],j-3,&tensors_[i][j]),NpuStage::request);
+                check(data_(tensors_[i][j],reinterpret_cast<void**>(&values_[i][j])),NpuStage::request);
             }
         }
         fft_=signal::createFFT(9,signal::radix2);
@@ -71,6 +86,10 @@ public:
     }
     void reset(){
         mic_.fill(0);ref_.fill(0);overlap_.fill(0);
+        resetState();
+    }
+    // Clears only the recurrent states; the analysis windows and overlap stay continuous.
+    void resetState(){
         for(auto& v:values_)if(v[1])std::fill_n(v[1],1024,0.f);
     }
     void process(const float* microphone,const float* reference,float* out){
@@ -83,16 +102,16 @@ public:
         for(int k=0;k<257;++k)values_[0][0][k]=std::hypot(real_[k],imag_[k]);
         real_=ref_;imag_.fill(0);signal::fft(fft_,&z,1,9,signal::forward);
         for(int k=0;k<257;++k)values_[0][2][k]=std::hypot(real_[k],imag_[k]);
-        check(infer_(requests_[0]));std::copy_n(values_[0][4],1024,values_[0][1]);
+        check(infer_(requests_[0]),NpuStage::inference);std::copy_n(values_[0][4],1024,values_[0][1]);
         for(int k=0;k<512;++k){const auto bin=k<=256?k:512-k;real_[k]=mr_[k]*values_[0][3][bin];imag_[k]=mi_[k]*values_[0][3][bin];}
         signal::fft(fft_,&z,1,9,signal::inverse);
         for(int k=0;k<512;++k){values_[1][0][k]=real_[k]/512.f;values_[1][2][k]=ref_[k];}
-        check(infer_(requests_[1]));std::copy_n(values_[1][4],1024,values_[1][1]);
+        check(infer_(requests_[1]),NpuStage::inference);std::copy_n(values_[1][4],1024,values_[1][1]);
         std::move(overlap_.begin()+128,overlap_.end(),overlap_.begin());std::fill(overlap_.begin()+384,overlap_.end(),0.f);
         for(int k=0;k<512;++k)overlap_[k]+=values_[1][3][k];
         float inputEnergy=0.f,outputEnergy=0.f,referenceEnergy=0.f;
         for(int k=0;k<128;++k){
-            if(!std::isfinite(overlap_[k]))throw std::runtime_error("Nonfinite NPU output");
+            if(!std::isfinite(overlap_[k]))throw NpuFailure(NpuStage::output,"Nonfinite NPU output");
             out[k]=overlap_[k];
             // The first 128 samples of the rolling window correspond to this
             // output hop; comparing with the newest input misclassifies onsets.

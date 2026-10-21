@@ -1,0 +1,121 @@
+[
+  {
+    "id": "01-library",
+    "title": "클립보드 보관함",
+    "path": "/home/sunggu/.codex/generated_images/01a0fda8-a05d-75f1-9130-4843600c7220/exec-4ba5fae9-e938-4350-81bf-93484b26e21a.png",
+    "description": "선택한 2번 시안. 카드 그리드, 검색, 모음, 필터와 선택 항목 작업.",
+    "file": "images/01-library.png"
+  },
+  {
+    "id": "02-shortcut",
+    "title": "단축키 클립보드 패널",
+    "path": "/home/sunggu/.codex/generated_images/01a0fda8-a05d-75f1-9130-4843600c7220/exec-23cfba45-196f-493f-a40e-02f352c6a5cc.png",
+    "description": "작성 중인 앱 위에 하단 패널을 열고, 검색·카드 선택 후 붙여넣기. Ubuntu 제안 단축키는 Super+Shift+V.",
+    "file": "images/02-shortcut.png"
+  },
+  {
+    "id": "03-ai-search",
+    "title": "클립보드 AI 검색",
+    "path": "/home/sunggu/.codex/generated_images/01a0fda8-a05d-75f1-9130-4843600c7220/exec-c3b26013-1b1a-4cdf-9cb7-e1160e3ad849.png",
+    "description": "선택한 모음 범위에서 자연어로 검색하고, 요약과 관련 기록을 함께 확인하는 패널 상태.",
+    "file": "images/03-ai-search.png"
+  },
+  {
+    "id": "04-detail",
+    "title": "클립보드 상세 미리보기",
+    "path": "/home/sunggu/.codex/generated_images/01a0fda8-a05d-75f1-9130-4843600c7220/exec-9e2bf65b-594f-4bb8-b846-0240be1ca342.png",
+    "description": "이미지 확대, 파일 정보, 모음 지정, 고정, 복사·붙여넣기. 이미지 태깅은 구현 예정 기능의 예시.",
+    "file": "images/04-detail.png"
+  },
+  {
+    "id": "05-filter",
+    "title": "클립보드 필터",
+    "path": "/home/sunggu/.codex/generated_images/01a0fda8-a05d-75f1-9130-4843600c7220/exec-8b96414c-746f-437c-b681-83c56cf664a9.png",
+    "description": "복사한 앱·콘텐츠 종류·날짜를 조합하는 필터 팝오버. 모음과 함께 사용할 수 있는 상태.",
+    "file": "images/05-filter.png"
+  },
+  {
+    "id": "06-clipboard-settings",
+    "title": "클립보드 설정",
+    "path": "/home/sunggu/.codex/generated_images/01a0fda8-a05d-75f1-9130-4843600c7220/exec-ad5dba80-7db2-49d8-9eb6-28c25a6a8b8e.png",
+    "description": "기록, 단축키, 제외 앱, 저장 공간, 선택적 AI 검색·태깅을 관리하는 환경설정.",
+    "file": "images/06-clipboard-settings.png"
+  },
+  {
+    "id": "07-sound",
+    "title": "사운드",
+    "path": "/home/sunggu/.codex/generated_images/01a0fda8-a05d-75f1-9130-4843600c7220/exec-13392723-8b28-4e0d-9c05-52e79eec10aa.png",
+    "description": "출력 장치와 좌우 REW EQ, 마이크 입력, NPU 에코 제거와 음소거를 관리합니다. 표시된 연결·지연 값은 예시입니다.",
+    "file": "images/07-sound.png"
+  },
+  {
+    "id": "08-hdr",
+    "title": "디스플레이 · HDR",
+    "path": "/home/sunggu/.codex/generated_images/01a0fda8-a05d-75f1-9130-4843600c7220/exec-c6c0d53c-d86c-4202-a8f4-9cd480d15d01.png",
+    "description": "모니터별 HDR과 프로그램 실행에 따른 자동 전환. 기기 이름은 확인한 환경을 반영했으며 켜짐·꺼짐은 시안용 상태입니다.",
+    "file": "images/08-hdr.png"
+  },
+  {
+    "id": "09-power",
+    "title": "디스플레이 · 화면 꺼짐 방지",
+    "path": "/home/sunggu/.codex/generated_images/01a0fda8-a05d-75f1-9130-4843600c7220/exec-27c7e445-e5e3-47ba-a1e5-16ce0743e58b.png",
+    "description": "화면을 켜 두는 앱과 이유를 확인하는 조회 화면. GNOME 화면 꺼짐 요청과 logind 시스템 절전 요청을 구분합니다.",
+    "file": "images/09-power.png"
+  },
+  {
+    "id": "10-antigravity",
+    "title": "AI 서비스 · Antigravity",
+    "path": "/home/sunggu/.codex/generated_images/01a0fda8-a05d-75f1-9130-4843600c7220/exec-735f0e23-733b-4622-b802-762d4676372b.png",
+    "description": "CLI 로그인과 모델 선택, 로컬 API 주소·키, 연결 테스트를 한 화면에서 확인합니다. 실행 상태와 응답은 예시입니다.",
+    "file": "images/10-antigravity.png"
+  },
+  {
+    "id": "11-vllm",
+    "title": "AI 서비스 · vLLM",
+    "path": "/home/sunggu/.codex/generated_images/01a0fda8-a05d-75f1-9130-4843600c7220/exec-bb36f7a2-7a15-4def-98fa-4cf2bbc59022.png",
+    "description": "로컬 모델의 시작 단계, 실행 설정과 API 주소를 확인합니다. 모델·로딩 진행률은 제안 구성을 사용한 디자인 예시입니다.",
+    "file": "images/11-vllm.png"
+  },
+  {
+    "id": "12-diagnostics",
+    "title": "진단",
+    "path": "/home/sunggu/.codex/generated_images/01a0fda8-a05d-75f1-9130-4843600c7220/exec-97119ded-c244-4e3f-864c-ed075da758ad.png",
+    "description": "서비스·GNOME 확장·오디오·AI 상태와 최근 이벤트를 확인하고 진단을 내보내는 화면. 모든 상태와 로그는 시안용 예시입니다.",
+    "file": "images/12-diagnostics.png"
+  },
+  {
+    "id": "13-settings",
+    "title": "일반 설정",
+    "path": "/home/sunggu/.codex/generated_images/01a0fda8-a05d-75f1-9130-4843600c7220/exec-f68eb6db-62fc-4ea8-b7e0-281c1521da60.png",
+    "description": "시스템 테마, 자동 시작, 창 닫기 동작, GNOME 연동과 단축키를 관리합니다. Super+Shift+V와 Super+Alt+M은 Ubuntu용 제안입니다.",
+    "file": "images/13-settings.png"
+  },
+  {
+    "id": "14-quick-menu",
+    "title": "GNOME 빠른 메뉴",
+    "path": "/home/sunggu/.codex/generated_images/01a0fda8-a05d-75f1-9130-4843600c7220/exec-f5c691d9-a569-48e0-82c7-21f78ae66d1f.png",
+    "description": "상단 패널에서 클립보드, 마이크, EQ·에코 제거, HDR과 vLLM을 빠르게 제어하는 GNOME 확장 시안입니다.",
+    "file": "images/14-quick-menu.png"
+  },
+  {
+    "id": "15-collections",
+    "title": "클립보드 · 모음 관리",
+    "path": "/home/sunggu/.codex/generated_images/01a0fda8-a05d-75f1-9130-4843600c7220/exec-fb20c245-4853-4a57-9d35-e9d3f5214cc2.png",
+    "description": "모음 생성·이름 변경·삭제를 위한 대화상자. 모음 삭제와 기록 삭제를 구분해 안내합니다.",
+    "file": "images/15-collections.png"
+  },
+  {
+    "id": "16-empty",
+    "title": "클립보드 · 첫 실행",
+    "path": "/home/sunggu/.codex/generated_images/01a0fda8-a05d-75f1-9130-4843600c7220/exec-bf2e2a13-5edd-4b4f-9aae-5b84eef20875.png",
+    "description": "아직 기록이 없을 때 보여 주는 첫 화면. 기록이 쌓이는 방식과 빠른 열기 단축키를 간결하게 안내합니다.",
+    "file": "images/16-empty.png"
+  },
+  {
+    "id": "17-ai-error",
+    "title": "클립보드 · AI 연결 오류",
+    "path": "/home/sunggu/.codex/generated_images/01a0fda8-a05d-75f1-9130-4843600c7220/exec-e03b049d-f3b2-4258-abb1-964cf4094615.png",
+    "description": "입력한 검색어를 유지한 채 다시 시도하거나 일반 검색으로 전환하는 오류 상태. 연결 설정으로 이동하는 경로도 제공합니다.",
+    "file": "images/17-ai-error.png"
+  }
+]

@@ -75,6 +75,13 @@ if(WIN32)
     add_subdirectory(Sources/Windows)
 endif()
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    option(PERSONALTOOLS_BUILD_LINUX_AUDIO "Build the native PipeWire audio service" ON)
+    if(PERSONALTOOLS_BUILD_LINUX_AUDIO)
+        add_subdirectory(Sources/Linux/Audio)
+    endif()
+endif()
+
 if(NOT APPLE)
     return()
 endif()

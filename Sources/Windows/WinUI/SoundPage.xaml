@@ -1,0 +1,167 @@
+<UserControl x:Class="PersonalTools.SoundPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:PersonalTools">
+  <UserControl.Resources>
+    <DataTemplate x:Key="FilterRow" x:DataType="local:Filter">
+      <Grid Padding="0,7" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition Width="64"/></Grid.ColumnDefinitions>
+        <TextBlock Text="{x:Bind FrequencyText}" FontSize="13"/>
+        <TextBlock Grid.Column="1" Text="{x:Bind GainCell}" FontSize="13" HorizontalAlignment="Right"/>
+        <TextBlock Grid.Column="2" Text="{x:Bind QCell}" FontSize="13" HorizontalAlignment="Right"/>
+      </Grid>
+    </DataTemplate>
+  </UserControl.Resources>
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+    <StackPanel MaxWidth="1000" Margin="36,28,36,32" Spacing="16">
+      <Grid ColumnSpacing="8">
+        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+        <TextBlock Text="사운드" Style="{StaticResource PageTitle}"/>
+        <Border Grid.Column="1" Style="{StaticResource StatusPill}" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="8"><Ellipse x:Name="EqDot" Width="8" Height="8"/><TextBlock x:Name="EqPill" FontSize="12"/></StackPanel>
+        </Border>
+        <Border Grid.Column="2" Style="{StaticResource StatusPill}" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="8"><Ellipse x:Name="AecDot" Width="8" Height="8"/><TextBlock x:Name="AecPill" FontSize="12"/></StackPanel>
+        </Border>
+      </Grid>
+      <StackPanel Spacing="8">
+        <InfoBar x:Name="SetupInfo" IsOpen="False" IsClosable="False" Severity="Informational" Title="오디오 효과를 설치해 주세요"
+                 Message="장치를 확인한 뒤 설치하면 스피커 EQ와 NPU 반향 제거를 쓸 수 있습니다.">
+          <InfoBar.ActionButton><Button x:Name="InstallButton" Content="설치 및 적용" Click="Install" Style="{ThemeResource AccentButtonStyle}"/></InfoBar.ActionButton>
+          <InfoBar.Content>
+            <StackPanel Spacing="4" Margin="0,0,0,12">
+              <CheckBox x:Name="LocalUnsignedOption" Content="이 PC에서 직접 빌드한 미서명 오디오 모듈 사용"/>
+              <TextBlock Style="{StaticResource CardDescription}" Text="Windows의 보호된 오디오 설정을 이 PC에서만 완화합니다. 일부 스트리밍 재생에 영향을 줄 수 있으며, 원래 설정으로 복원하면 이전 값으로 돌아갑니다."/>
+            </StackPanel>
+          </InfoBar.Content>
+        </InfoBar>
+        <InfoBar x:Name="MessageBar" IsOpen="False" IsClosable="True"/>
+        <InfoBar x:Name="CaptureWarning" IsOpen="False" IsClosable="False" Severity="Warning"/>
+      </StackPanel>
+
+      <StackPanel Spacing="4">
+        <TextBlock Text="스피커" Style="{StaticResource GroupHeader}" Margin="0,8,0,4"/>
+        <Border Style="{StaticResource SettingCard}">
+          <Grid ColumnSpacing="16">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <FontIcon Glyph="&#xE767;" FontSize="20"/>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+              <TextBlock Text="출력 장치"/>
+              <TextBlock x:Name="DeviceHint" Style="{StaticResource CardDescription}" Text="Windows 기본 재생 장치와 통화 앱도 같은 장치로 맞춰 주세요."/>
+            </StackPanel>
+            <ComboBox x:Name="OutputDevice" Grid.Column="2" Width="280" PlaceholderText="출력 장치 선택" DisplayMemberPath="Name"
+                      AutomationProperties.Name="스피커 출력 장치" VerticalAlignment="Center"/>
+          </Grid>
+        </Border>
+        <StackPanel>
+          <Border Style="{StaticResource SettingCard}" CornerRadius="4,4,0,0">
+            <Grid ColumnSpacing="16">
+              <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+              <FontIcon Glyph="&#xE9E9;" FontSize="20"/>
+              <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                <TextBlock Text="좌우 독립 EQ"/>
+                <TextBlock Style="{StaticResource CardDescription}" Text="REW Configurable_PEQ 파일의 필터를 채널마다 따로 적용합니다."/>
+              </StackPanel>
+              <ToggleSwitch x:Name="EqSwitch" Grid.Column="2" OnContent="켬" OffContent="끔" MinWidth="0" IsEnabled="False" Toggled="ToggleEffect"
+                            AutomationProperties.Name="좌우 독립 EQ"/>
+            </Grid>
+          </Border>
+          <Border Style="{StaticResource ExpanderBody}">
+            <Grid x:Name="Channels" ColumnSpacing="24" RowSpacing="16" SizeChanged="ChannelsSizeChanged">
+              <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition x:Name="RightColumn"/></Grid.ColumnDefinitions>
+              <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+              <StackPanel Spacing="8">
+                <Grid ColumnSpacing="10">
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <Border Width="22" Height="22" CornerRadius="4" Background="{ThemeResource SubtleFillColorSecondaryBrush}">
+                    <TextBlock Text="L" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                  </Border>
+                  <TextBlock Grid.Column="1" Text="왼쪽" FontSize="13" VerticalAlignment="Center"/>
+                  <TextBlock x:Name="LeftSummary" Grid.Column="2" FontSize="13" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
+                  <Button x:Name="ImportLeft" Grid.Column="3" Content="가져오기" Tag="0" Click="ImportFilter" IsEnabled="False" Padding="10,3"/>
+                </Grid>
+                <Grid Padding="0,0,0,4">
+                  <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition Width="64"/></Grid.ColumnDefinitions>
+                  <TextBlock Text="주파수" Style="{StaticResource Footnote}"/>
+                  <TextBlock Grid.Column="1" Text="게인" Style="{StaticResource Footnote}" HorizontalAlignment="Right"/>
+                  <TextBlock Grid.Column="2" Text="Q" Style="{StaticResource Footnote}" HorizontalAlignment="Right"/>
+                </Grid>
+                <ItemsControl x:Name="LeftFilters" ItemTemplate="{StaticResource FilterRow}" Margin="0,-8,0,0"/>
+              </StackPanel>
+              <StackPanel x:Name="RightProfile" Grid.Column="1" Spacing="8">
+                <Grid ColumnSpacing="10">
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <Border Width="22" Height="22" CornerRadius="4" Background="{ThemeResource SubtleFillColorSecondaryBrush}">
+                    <TextBlock Text="R" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                  </Border>
+                  <TextBlock Grid.Column="1" Text="오른쪽" FontSize="13" VerticalAlignment="Center"/>
+                  <TextBlock x:Name="RightSummary" Grid.Column="2" FontSize="13" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
+                  <Button x:Name="ImportRight" Grid.Column="3" Content="가져오기" Tag="1" Click="ImportFilter" IsEnabled="False" Padding="10,3"/>
+                </Grid>
+                <Grid Padding="0,0,0,4">
+                  <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition Width="64"/></Grid.ColumnDefinitions>
+                  <TextBlock Text="주파수" Style="{StaticResource Footnote}"/>
+                  <TextBlock Grid.Column="1" Text="게인" Style="{StaticResource Footnote}" HorizontalAlignment="Right"/>
+                  <TextBlock Grid.Column="2" Text="Q" Style="{StaticResource Footnote}" HorizontalAlignment="Right"/>
+                </Grid>
+                <ItemsControl x:Name="RightFilters" ItemTemplate="{StaticResource FilterRow}" Margin="0,-8,0,0"/>
+              </StackPanel>
+            </Grid>
+          </Border>
+        </StackPanel>
+      </StackPanel>
+
+      <StackPanel Spacing="4">
+        <TextBlock Text="마이크" Style="{StaticResource GroupHeader}" Margin="0,8,0,4"/>
+        <Border Style="{StaticResource SettingCard}">
+          <Grid ColumnSpacing="16">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <FontIcon Glyph="&#xE720;" FontSize="20"/>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+              <TextBlock Text="입력 장치"/>
+              <TextBlock Style="{StaticResource CardDescription}" Text="MOTU 입력 1을 사용합니다. Loopback 입력은 선택하지 마세요."/>
+            </StackPanel>
+            <ComboBox x:Name="InputDevice" Grid.Column="2" Width="280" PlaceholderText="입력 장치 선택" DisplayMemberPath="Name"
+                      AutomationProperties.Name="마이크 입력 장치" VerticalAlignment="Center"/>
+          </Grid>
+        </Border>
+        <StackPanel>
+          <Border Style="{StaticResource SettingCard}" CornerRadius="4,4,0,0">
+            <Grid ColumnSpacing="16">
+              <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+              <Viewbox Width="20" Height="20" VerticalAlignment="Center">
+                <Path Fill="{ThemeResource TextFillColorPrimaryBrush}" Data="M7,1.5 L8.4,5.6 12.5,7 8.4,8.4 7,12.5 5.6,8.4 1.5,7 5.6,5.6 Z M12.6,10.4 L13.2,12 14.8,12.6 13.2,13.2 12.6,14.8 12,13.2 10.4,12.6 12,12 Z"/>
+              </Viewbox>
+              <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                <TextBlock Text="스피커 반향 제거"/>
+                <TextBlock Style="{StaticResource CardDescription}" Text="스피커 소리가 마이크로 되돌아오는 것을 NPU에서 실시간으로 지웁니다."/>
+              </StackPanel>
+              <ToggleSwitch x:Name="AecSwitch" Grid.Column="2" OnContent="켬" OffContent="끔" MinWidth="0" IsEnabled="False" Toggled="ToggleEffect"
+                            AutomationProperties.Name="스피커 반향 제거"/>
+            </Grid>
+          </Border>
+          <Border Style="{StaticResource ExpanderBody}">
+            <Grid ColumnSpacing="16" RowSpacing="10">
+              <Grid.ColumnDefinitions><ColumnDefinition Width="120"/><ColumnDefinition/></Grid.ColumnDefinitions>
+              <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+              <TextBlock Text="처리 장치" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"/>
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                <TextBlock x:Name="NpuText" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                <Border Style="{StaticResource StatusPill}" Padding="10,3">
+                  <StackPanel Orientation="Horizontal" Spacing="6"><Ellipse x:Name="NpuDot" Width="8" Height="8"/><TextBlock x:Name="NpuState" FontSize="12"/></StackPanel>
+                </Border>
+              </StackPanel>
+              <TextBlock Grid.Row="1" Text="스피커 참조" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+              <TextBlock x:Name="ReferenceText" Grid.Row="1" Grid.Column="1" FontSize="13" TextWrapping="Wrap"/>
+              <TextBlock Grid.Row="2" Text="처리 지연" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+              <TextBlock x:Name="LatencyText" Grid.Row="2" Grid.Column="1" FontSize="13"/>
+              <TextBlock Grid.Row="3" Text="NPU 상태" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+              <TextBlock x:Name="NpuHealth" Grid.Row="3" Grid.Column="1" FontSize="13" TextWrapping="Wrap"/>
+            </Grid>
+          </Border>
+        </StackPanel>
+      </StackPanel>
+      <TextBlock Style="{StaticResource Footnote}" Text="창을 닫아도 트레이에서 계속 실행되며 스피커 참조 신호를 전달합니다. ASIO·독점 모드 앱에는 효과가 적용되지 않을 수 있습니다."/>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

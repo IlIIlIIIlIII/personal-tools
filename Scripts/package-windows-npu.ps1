@@ -26,7 +26,10 @@ Get-ChildItem -LiteralPath $RuntimeDirectory -Filter '*.dll' | Copy-Item -Destin
 foreach($name in $hashes.Keys){Copy-Item -LiteralPath (Join-Path $ModelDirectory $name) -Destination $target -Force}
 Copy-Item -LiteralPath $ModelLicense -Destination (Join-Path $target 'LICENSE-DTLN-AEC.txt') -Force
 Copy-Item -LiteralPath (Join-Path $RuntimeLicenseDirectory 'LICENSE') -Destination (Join-Path $target 'LICENSE-OpenVINO.txt') -Force
-Get-ChildItem -LiteralPath (Join-Path $RuntimeLicenseDirectory 'licensing') -File | Copy-Item -Destination $target -Force
+# Older archives keep notices in docs/licensing/licensing; 2026 keeps them beside LICENSE.
+$notices = Join-Path $RuntimeLicenseDirectory 'licensing'
+if (!(Test-Path -LiteralPath $notices)) { $notices = $RuntimeLicenseDirectory }
+Get-ChildItem -LiteralPath $notices -File -Filter '*third-party-programs.txt' | Copy-Item -Destination $target -Force
 Get-ChildItem -LiteralPath $target -File | Get-FileHash -Algorithm SHA256 |
     Select-Object @{Name='file';Expression={Split-Path $_.Path -Leaf}},Hash |
     ConvertTo-Json | Set-Content -Encoding utf8 (Join-Path $target 'manifest.json')

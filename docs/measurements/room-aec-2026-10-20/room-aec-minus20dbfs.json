@@ -1,0 +1,79 @@
+﻿{
+    "measuredAt":  "2026-10-20T12:47:24",
+    "echoReductionDb":  18.8,
+    "on":  {
+               "render":  "스피커(SMSL USB DAC)",
+               "capture":  "In 1-2(MOTU M Series)",
+               "rate":  48000,
+               "channels":  2,
+               "recordedSeconds":  12.82,
+               "playbackDbfs":  -20,
+               "noiseDb":  -47.4,
+               "echoDb":  -47.3,
+               "echoAboveNoiseDb":  0.1,
+               "echoPowerMinusNoise":  3.7875656940278448E-07,
+               "clippedRatio":  0,
+               "status":  {
+                              "eq":  "EQ 처리 중",
+                              "aec":  "반향 제거 처리 중",
+                              "npu":  "Intel(R) AI Boost · DTLN-AEC 256",
+                              "npuState":  "처리 중",
+                              "reference":  "스피커(SMSL USB DAC) · 신호 확인",
+                              "latency":  "85.33 ms (NPU 처리 여유 포함)",
+                              "npuHealth":  "정상 · 처리한 블록 2,395개"
+                          }
+           },
+    "off":  {
+                "render":  "스피커(SMSL USB DAC)",
+                "capture":  "In 1-2(MOTU M Series)",
+                "rate":  48000,
+                "channels":  2,
+                "recordedSeconds":  12.82,
+                "playbackDbfs":  -20,
+                "noiseDb":  -36,
+                "echoDb":  -32.2,
+                "echoAboveNoiseDb":  3.8,
+                "echoPowerMinusNoise":  0.0003473334089075357,
+                "clippedRatio":  0,
+                "status":  {
+                               "eq":  "EQ 처리 중",
+                               "aec":  "반향 제거 꺼짐",
+                               "npu":  "Intel(R) AI Boost · DTLN-AEC 256",
+                               "npuState":  "대기",
+                               "reference":  "스피커(SMSL USB DAC) · 소리가 재생되면 확인합니다",
+                               "latency":  "85.33 ms (NPU 처리 여유 포함)",
+                               "npuHealth":  "정상 · 처리한 블록 4,061개"
+                           }
+            },
+    "on2":  {
+                "render":  "스피커(SMSL USB DAC)",
+                "capture":  "In 1-2(MOTU M Series)",
+                "rate":  48000,
+                "channels":  2,
+                "recordedSeconds":  12.82,
+                "playbackDbfs":  -20,
+                "noiseDb":  -58.2,
+                "echoDb":  -54.7,
+                "echoAboveNoiseDb":  3.5,
+                "echoPowerMinusNoise":  1.8566153928818886E-06,
+                "clippedRatio":  0,
+                "status":  {
+                               "eq":  "EQ 처리 중",
+                               "aec":  "반향 제거 처리 중",
+                               "npu":  "Intel(R) AI Boost · DTLN-AEC 256",
+                               "npuState":  "처리 중",
+                               "reference":  "스피커(SMSL USB DAC) · 신호 확인",
+                               "latency":  "85.33 ms (NPU 처리 여유 포함)",
+                               "npuHealth":  "정상 · 처리한 블록 5,613개"
+                           }
+            },
+    "finalStatus":  {
+                        "eq":  "EQ 처리 중",
+                        "aec":  "반향 제거 처리 중",
+                        "npu":  "Intel(R) AI Boost · DTLN-AEC 256",
+                        "npuState":  "처리 중",
+                        "reference":  "스피커(SMSL USB DAC) · 신호 확인",
+                        "latency":  "85.33 ms (NPU 처리 여유 포함)",
+                        "npuHealth":  "정상 · 처리한 블록 6,401개"
+                    }
+}

@@ -9,28 +9,30 @@ namespace PersonalTools;
 internal static class ClipboardAppIcons
 {
     private static readonly Dictionary<string, Task<BitmapImage?>> cache = new(StringComparer.OrdinalIgnoreCase);
-    internal static async Task<BitmapImage?> GetAsync(ClipEntry entry)
+    internal static Task<BitmapImage?> GetAsync(ClipEntry entry) => GetAsync(entry.SourcePath, entry.SourceApp);
+    // sourceApp is the executable file name; path is the full image path when known.
+    internal static async Task<BitmapImage?> GetAsync(string? path, string sourceApp)
     {
-        string key = entry.SourcePath ?? entry.SourceApp;
-        if (!cache.TryGetValue(key, out var task)) cache[key] = task = LoadAsync(entry);
+        string key = path ?? sourceApp;
+        if (!cache.TryGetValue(key, out var task)) cache[key] = task = LoadAsync(path, sourceApp);
         var result = await task;
         if (result is null) cache.Remove(key);
         return result;
     }
-    private static async Task<BitmapImage?> LoadAsync(ClipEntry entry)
+    private static async Task<BitmapImage?> LoadAsync(string? sourcePath, string sourceApp)
     {
         try
         {
-            string? path = await Task.Run(() => Resolve(entry));
-            if (path is null) return await PackageIconAsync(entry.SourceApp);
+            string? path = await Task.Run(() => Resolve(sourcePath, sourceApp));
+            if (path is null) return await PackageIconAsync(sourceApp);
             var file = await StorageFile.GetFileFromPathAsync(path);
             using var thumbnail = await file.GetThumbnailAsync(ThumbnailMode.SingleItem, 64, ThumbnailOptions.UseCurrentScale);
-            if (thumbnail is null || thumbnail.Size == 0) return await PackageIconAsync(entry.SourceApp);
+            if (thumbnail is null || thumbnail.Size == 0) return await PackageIconAsync(sourceApp);
             var image = new BitmapImage();
             await image.SetSourceAsync(thumbnail);
             return image;
         }
-        catch { return await PackageIconAsync(entry.SourceApp); }
+        catch { return await PackageIconAsync(sourceApp); }
     }
     private static async Task<BitmapImage?> PackageIconAsync(string sourceApp)
     {
@@ -58,10 +60,10 @@ internal static class ClipboardAppIcons
         }
         catch { return null; }
     }
-    private static string? Resolve(ClipEntry entry)
+    private static string? Resolve(string? sourcePath, string sourceApp)
     {
-        if (entry.SourcePath is { } saved && Path.IsPathFullyQualified(saved) && File.Exists(saved)) return saved;
-        string name = Path.GetFileNameWithoutExtension(entry.SourceApp);
+        if (sourcePath is { } saved && Path.IsPathFullyQualified(saved) && File.Exists(saved)) return saved;
+        string name = Path.GetFileNameWithoutExtension(sourceApp);
         foreach (var process in Process.GetProcessesByName(name))
         {
             using (process)
@@ -74,10 +76,10 @@ internal static class ClipboardAppIcons
         // can resolve installed desktop apps after their process has exited.
         foreach (var hive in new[] { Microsoft.Win32.Registry.CurrentUser, Microsoft.Win32.Registry.LocalMachine })
         {
-            using var key = hive.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\" + Path.GetFileName(entry.SourceApp));
+            using var key = hive.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\" + Path.GetFileName(sourceApp));
             if (key?.GetValue("") is string path && File.Exists(path.Trim('"'))) return path.Trim('"');
         }
-        string system = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), Path.GetFileName(entry.SourceApp));
+        string system = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), Path.GetFileName(sourceApp));
         return File.Exists(system) ? system : null;
     }
 }

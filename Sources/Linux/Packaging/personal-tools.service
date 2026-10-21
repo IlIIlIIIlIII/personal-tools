@@ -1,0 +1,19 @@
+[Unit]
+Description=Personal Tools Ubuntu user service
+After=graphical-session.target personal-tools-audio.service
+Wants=personal-tools-audio.service
+PartOf=graphical-session.target
+
+[Service]
+Type=dbus
+BusName=io.griplabs.PersonalTools
+ExecStart=/usr/lib/personal-tools/service/personal-tools-service
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=20
+UMask=0077
+
+[Install]
+# The user manager (and default.target) can survive logout while vLLM keeps
+# running. Pull us in for each graphical session, matching PartOf above.
+WantedBy=graphical-session.target

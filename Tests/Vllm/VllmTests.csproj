@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+ <ItemGroup>
+  <Compile Include="../../Sources/Windows/WinUI/VllmModels.cs" Link="VllmModels.cs"/>
+  <Compile Include="../../Sources/Windows/WinUI/VllmProgress.cs" Link="VllmProgress.cs"/>
+  <Compile Include="../../Sources/Windows/WinUI/VllmController.cs" Link="VllmController.cs"/>
+  <Compile Include="../../Sources/Windows/WinUI/HdrWire.cs" Link="HdrWire.cs"/>
+  <Compile Include="../../Sources/Windows/HdrWidget/VllmCard.cs" Link="VllmCard.cs"/>
+ </ItemGroup>
+</Project>

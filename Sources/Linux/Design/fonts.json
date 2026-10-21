@@ -1,0 +1,38 @@
+{
+  "language": "ko-KR",
+  "fonts": [
+    {
+      "requestedFamily": "Ubuntu Sans",
+      "resolvedFamily": "Ubuntu Sans",
+      "file": "/usr/share/fonts/truetype/ubuntu/UbuntuSans[wdth,wght].ttf",
+      "fontVersion": "65929",
+      "sha256": "37e90bba45a2a1172d9f6078e45daebaa1b4e537943205cc1309f142a254fe40",
+      "bundledFile": "fonts/UbuntuSans[wdth,wght].ttf"
+    },
+    {
+      "requestedFamily": "Noto Sans CJK KR",
+      "resolvedFamily": "Noto Sans CJK KR",
+      "file": "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+      "fontVersion": "131334",
+      "sha256": "b76b0433203017ca80401b2ee0dd69350349871c4b19d504c34dbdd80541690a",
+      "bundledFile": "fonts/NotoSansCJK-Regular.ttc"
+    },
+    {
+      "requestedFamily": "Ubuntu Sans Mono",
+      "resolvedFamily": "Ubuntu Sans Mono",
+      "file": "/usr/share/fonts/truetype/ubuntu/UbuntuSansMono[wght].ttf",
+      "fontVersion": "65929",
+      "sha256": "507870a3fe5737eb5b02f366587d30607c02a5ad45d8fe94b3ee20a80ccad32a",
+      "bundledFile": "fonts/UbuntuSansMono[wght].ttf"
+    },
+    {
+      "requestedFamily": "Noto Sans CJK KR",
+      "resolvedFamily": "Noto Sans CJK KR",
+      "weight": "bold",
+      "file": "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
+      "fontVersion": "131334",
+      "sha256": "faa5f3656a78b2e2d450d27fe8382c778bc2b6bb5ea29c986664a6a435056ceb",
+      "bundledFile": "fonts/NotoSansCJK-Bold.ttc"
+    }
+  ]
+}

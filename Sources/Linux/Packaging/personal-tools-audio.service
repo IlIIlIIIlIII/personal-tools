@@ -1,0 +1,16 @@
+[Unit]
+Description=Personal Tools PipeWire audio processing
+After=pipewire.service
+Requires=pipewire.service
+PartOf=personal-tools.service
+# Keep a clean engine exit from orphaning a still-running/rapidly reactivated
+# owner. Once the owner quits, do not respawn an unused background processor.
+StopWhenUnneeded=yes
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/personal-tools/run-audio.sh
+Environment=PERSONALTOOLS_AUDIO_BINARY=/usr/lib/personal-tools/audio/PersonalToolsAudio
+Restart=always
+RestartSec=3
+UMask=0077

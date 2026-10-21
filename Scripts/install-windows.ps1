@@ -43,11 +43,15 @@ foreach ($endpoint in @($render,$capture)) {
     }
 }
 $payload = @('PersonalToolsAPO.dll','PersonalToolsSetup.exe','install-windows.ps1','uninstall-windows.ps1','WindowsInstall.psm1','WindowsDeviceRecovery.psm1','repair-windows-device.ps1','repair-windows-capture.ps1','register-windows-device-recovery.ps1','ui')
-if(Test-Path -LiteralPath (Join-Path $SourceDirectory 'npu\enabled.flag')) { $payload += 'npu' }
+$signed = @('PersonalToolsAPO.dll','PersonalToolsSetup.exe','ui\PersonalToolsBridge.dll','ui\PersonalToolsWindows.exe','ui\PersonalToolsWindows.dll')
+# NPU inference runs in PersonalToolsNpuHost.exe beside the payload, never inside audiodg.
+if(Test-Path -LiteralPath (Join-Path $SourceDirectory 'npu\enabled.flag')) { $payload += @('npu','PersonalToolsNpuHost.exe'); $signed += 'PersonalToolsNpuHost.exe' }
+if(Test-Path -LiteralPath (Join-Path $SourceDirectory 'update-windows.ps1')) { $payload += 'update-windows.ps1' }
+if(Test-Path -LiteralPath (Join-Path $SourceDirectory 'EQ\L.txt')) { $payload += 'EQ' }
 foreach ($name in $payload) {
     if (-not (Test-Path -LiteralPath (Join-Path $SourceDirectory $name))) { throw "Missing payload: $name. Use cmake --install output." }
 }
-foreach ($name in @('PersonalToolsAPO.dll','PersonalToolsSetup.exe','ui\PersonalToolsBridge.dll','ui\PersonalToolsWindows.exe','ui\PersonalToolsWindows.dll')) {
+foreach ($name in $signed) {
     if (-not (Test-Path -LiteralPath (Join-Path $SourceDirectory $name))) { throw "Missing payload: $name. Run Scripts\build-windows.ps1." }
     $signature = Get-AuthenticodeSignature -LiteralPath (Join-Path $SourceDirectory $name)
     if (-not (Test-PayloadSignature $signature.Status.ToString() -LocalUnsigned:$LocalUnsigned)) {
@@ -121,7 +125,7 @@ try {
     & icacls.exe $data /grant "*$($sid):(OI)(CI)M" '*S-1-5-19:(OI)(CI)M' '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-545:(OI)(CI)RX' | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'Unable to set audio-engine settings access.' }
     $p = Start-Process -FilePath (Join-Path $destination 'PersonalToolsSetup.exe') -ArgumentList @('--initialize',"`"$RenderId`"","`"$CaptureId`"") -WindowStyle Hidden -Wait -PassThru
-    if ($p.ExitCode -ne 0) { throw "Initial device/EQ configuration failed ($($p.ExitCode)). Check E:\Speaker\L.txt and R.txt." }
+    if ($p.ExitCode -ne 0) { throw "Initial device/EQ configuration failed ($($p.ExitCode)). Check E:\Speaker or the package EQ folder for L.txt and R.txt." }
     foreach ($change in $changes) { Set-RegistryValue $change.Path $change.Name $change.Kind $change.Value }
     & (Join-Path $destination 'register-windows-device-recovery.ps1')
 } catch {

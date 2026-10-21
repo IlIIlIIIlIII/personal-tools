@@ -1,0 +1,27 @@
+[Desktop Entry]
+Type=Application
+Name=Personal Tools
+Comment=Clipboard, sound, displays and local AI for Ubuntu
+Comment[ko]=클립보드, 사운드, 디스플레이와 로컬 AI 도구
+Exec=personal-tools
+Icon=io.griplabs.PersonalTools.App
+Terminal=false
+Categories=Utility;Settings;
+StartupNotify=true
+StartupWMClass=io.griplabs.PersonalTools.App
+Actions=Clipboard;Sound;Settings;
+
+[Desktop Action Clipboard]
+Name=Clipboard
+Name[ko]=클립보드
+Exec=personal-tools --page clipboard
+
+[Desktop Action Sound]
+Name=Sound
+Name[ko]=사운드
+Exec=personal-tools --page sound
+
+[Desktop Action Settings]
+Name=Settings
+Name[ko]=설정
+Exec=personal-tools --page settings

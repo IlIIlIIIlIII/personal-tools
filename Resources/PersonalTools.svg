@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 128 128">
+  <title>Personal Tools</title>
+  <desc>Three adjustable controls in warm white on an olive tile.</desc>
+  <rect x="8" y="10" width="112" height="112" rx="26" fill="#42472d"/>
+  <rect x="8" y="6" width="112" height="112" rx="26" fill="#697238"/>
+  <g fill="none" stroke="#f3f2ed" stroke-width="6" stroke-linecap="round">
+    <path d="M32 38h64M32 62h64M32 86h64"/>
+  </g>
+  <g fill="#242424" stroke="#f3f2ed" stroke-width="5">
+    <rect x="43" y="28" width="12" height="20" rx="6"/>
+    <rect x="73" y="52" width="12" height="20" rx="6"/>
+    <rect x="43" y="76" width="12" height="20" rx="6"/>
+  </g>
+</svg>

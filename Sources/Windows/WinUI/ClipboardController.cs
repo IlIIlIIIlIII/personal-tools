@@ -13,7 +13,8 @@ internal sealed class ClipboardController : IAsyncDisposable
     private readonly CancellationTokenSource lifetime = new();
     private readonly HashSet<Task> captures = [];
     private ClipboardNative? native;
-    private uint generation;
+    private readonly ClipboardImageTagger tagger;
+    private uint generation, ownSequence;
     public ClipboardStore Store { get; }
     public ClipboardSearch Search { get; }
     public event Action<string>? Status;
@@ -26,7 +27,21 @@ internal sealed class ClipboardController : IAsyncDisposable
         catch { settings = new() { Paused = true }; }
         Store = new(settings);
         Search = new(bridge, Store, BridgeSettings.Load);
+        tagger = new(Store, (path, token) => ClipboardImageTagger.AnalyzeAsync(BridgeSettings.Load(), path, token), message => Status?.Invoke(message));
         Store.Warning += message => dispatcher.TryEnqueue(() => Status?.Invoke(message));
+    }
+    // Records that were never tagged (or were interrupted) are queued again; failed ones wait for a manual retry.
+    private void QueueUntaggedImages()
+    {
+        if (!Store.Settings.AutoTagImages || Store.Settings.Paused) return;
+        foreach (var entry in Store.Entries.Where(x => x.Kind == "Image" && x.ImageTags is null && x.ImageTagState != "failed")) tagger.Enqueue(entry);
+    }
+    public void RetagImage(ClipEntry entry)
+    {
+        if (!Store.Settings.AutoTagImages) throw new InvalidOperationException("클립보드 설정에서 이미지 자동 태깅을 먼저 켜 주세요.");
+        if (entry.Kind != "Image") throw new ArgumentException("이미지 기록만 태그를 만들 수 있습니다.");
+        tagger.Enqueue(entry);
+        Status?.Invoke("이미지 태그를 만드는 중입니다.");
     }
     public async Task StartAsync(nint window)
     {
@@ -34,6 +49,7 @@ internal sealed class ClipboardController : IAsyncDisposable
         {
             await Task.Run(() => Store.LoadAsync(lifetime.Token));
             if (lifetime.IsCancellationRequested) return;
+            QueueUntaggedImages();
             native = new(window, OnChanged, () => TogglePopup?.Invoke());
             native.SetHotkey(Store.Settings.HotkeyModifiers, Store.Settings.HotkeyKey);
             Status?.Invoke(Store.Settings.Paused ? "기록 일시정지" : "복사하는 내용을 자동으로 보관합니다.");
@@ -43,6 +59,9 @@ internal sealed class ClipboardController : IAsyncDisposable
     private void OnChanged()
     {
         if (lifetime.IsCancellationRequested || Store.Settings.Paused) return;
+        // Our own copy for a paste: skip it without opening the clipboard, which would
+        // race the target app's paste.
+        if (ClipboardNative.GetClipboardSequenceNumber() == ownSequence) return;
         var source = ClipboardNative.SourceApp();
         if (Store.Settings.ExcludedApps.Any(x => Path.GetFileNameWithoutExtension(x).Equals(Path.GetFileNameWithoutExtension(source), StringComparison.OrdinalIgnoreCase))) return;
         uint current = ++generation;
@@ -89,7 +108,8 @@ internal sealed class ClipboardController : IAsyncDisposable
                     else if (data.Contains(StandardDataFormats.WebLink)) capture = new("Text", source, Text: (await data.GetWebLinkAsync()).AbsoluteUri);
                     if (capture is null || current != generation || sequence != ClipboardNative.GetClipboardSequenceNumber()) return;
                     capture = capture with { SourcePath = sourcePath };
-                    await Task.Run(() => Store.SaveAsync(capture, lifetime.Token));
+                    var saved = await Task.Run(() => Store.SaveAsync(capture, lifetime.Token));
+                    if (saved is not null && Store.Settings.AutoTagImages) tagger.Enqueue(saved);
                     return;
                 }
                 catch (System.Runtime.InteropServices.COMException) when (attempt < 3) { await Task.Delay(75, lifetime.Token); }
@@ -115,6 +135,10 @@ internal sealed class ClipboardController : IAsyncDisposable
             data.SetStorageItems(files, true);
         }
         Clipboard.SetContent(data); Clipboard.Flush();
+        ownSequence = ClipboardNative.GetClipboardSequenceNumber();
+        // Reordering is secondary; a failed metadata write must not block the paste.
+        try { await Store.TouchAsync(item); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { Status?.Invoke("기록 순서를 갱신하지 못했습니다: " + e.Message); return; }
         Status?.Invoke("클립보드에 복사했습니다.");
     }
     public async Task UpdateSettingsAsync(ClipboardSettings settings)
@@ -131,11 +155,13 @@ internal sealed class ClipboardController : IAsyncDisposable
             try { native?.SetHotkey(old.HotkeyModifiers, old.HotkeyKey); } catch { }
             throw;
         }
+        if (settings.AutoTagImages && (!old.AutoTagImages || old.Paused)) QueueUntaggedImages();
     }
     public async ValueTask DisposeAsync()
     {
         lifetime.Cancel(); native?.Dispose(); native = null;
         await Task.WhenAll(captures.ToArray());
+        await tagger.DisposeAsync();
         lifetime.Dispose();
     }
 }

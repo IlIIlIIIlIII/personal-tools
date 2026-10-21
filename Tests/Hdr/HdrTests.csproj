@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup>
+    <None Include="../../Sources/Windows/WinUI/DisplayPowerProbe.ps1" Link="DisplayPowerProbe.ps1" CopyToOutputDirectory="PreserveNewest"/>
+    <Compile Include="../../Sources/Windows/WinUI/DisplayPowerModels.cs" Link="DisplayPowerModels.cs"/>
+    <Compile Include="../../Sources/Windows/WinUI/DisplayPowerMonitor.cs" Link="DisplayPowerMonitor.cs"/>
+    <EmbeddedResource Include="../../Sources/Windows/HdrWidget/Assets/ToggleOn.png" LogicalName="PersonalTools.HdrWidget.ToggleOn.png"/>
+    <EmbeddedResource Include="../../Sources/Windows/HdrWidget/Assets/ToggleOff.png" LogicalName="PersonalTools.HdrWidget.ToggleOff.png"/>
+    <PackageReference Include="System.Management" Version="8.0.0"/>
+    <Compile Include="../../Sources/Windows/WinUI/HdrController.cs" Link="HdrController.cs"/>
+    <Compile Include="../../Sources/Windows/WinUI/HdrModels.cs" Link="HdrModels.cs"/>
+    <Compile Include="../../Sources/Windows/WinUI/HdrAutomation.cs" Link="HdrAutomation.cs"/>
+    <Compile Include="../../Sources/Windows/WinUI/HdrDisplay.cs" Link="HdrDisplay.cs"/>
+    <Compile Include="../../Sources/Windows/WinUI/HdrWire.cs" Link="HdrWire.cs"/>
+    <Compile Include="../../Sources/Windows/HdrWidget/WidgetCard.cs" Link="WidgetCard.cs"/>
+  </ItemGroup>
+</Project>

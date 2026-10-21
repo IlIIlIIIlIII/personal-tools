@@ -1,0 +1,23 @@
+<schemalist>
+  <schema id="org.gnome.shell.extensions.personal-tools" path="/org/gnome/shell/extensions/personal-tools/">
+    <key name="clipboard-shortcut" type="as"><default>['&lt;Control&gt;&lt;Shift&gt;v']</default><summary>클립보드 빠른 패널</summary></key>
+    <key name="microphone-shortcut" type="as"><default>['&lt;Super&gt;&lt;Alt&gt;m']</default><summary>전체 마이크 음소거</summary></key>
+    <key name="window-register-1" type="as"><default>['&lt;Super&gt;&lt;Shift&gt;1']</default><summary>현재 창을 1 슬롯에 등록</summary></key>
+    <key name="window-focus-1" type="as"><default>['&lt;Super&gt;1']</default><summary>1 슬롯의 창으로 전환</summary></key>
+    <key name="window-register-2" type="as"><default>['&lt;Super&gt;&lt;Shift&gt;2']</default><summary>현재 창을 2 슬롯에 등록</summary></key>
+    <key name="window-focus-2" type="as"><default>['&lt;Super&gt;2']</default><summary>2 슬롯의 창으로 전환</summary></key>
+    <key name="window-register-3" type="as"><default>['&lt;Super&gt;&lt;Shift&gt;3']</default><summary>현재 창을 3 슬롯에 등록</summary></key>
+    <key name="window-focus-3" type="as"><default>['&lt;Super&gt;3']</default><summary>3 슬롯의 창으로 전환</summary></key>
+    <key name="window-register-4" type="as"><default>['&lt;Super&gt;&lt;Shift&gt;4']</default><summary>현재 창을 4 슬롯에 등록</summary></key>
+    <key name="window-focus-4" type="as"><default>['&lt;Super&gt;4']</default><summary>4 슬롯의 창으로 전환</summary></key>
+    <key name="window-register-q" type="as"><default>['&lt;Super&gt;&lt;Shift&gt;q']</default><summary>현재 창을 Q 슬롯에 등록</summary></key>
+    <key name="window-focus-q" type="as"><default>['&lt;Super&gt;q']</default><summary>Q 슬롯의 창으로 전환</summary></key>
+    <key name="window-register-w" type="as"><default>['&lt;Super&gt;&lt;Shift&gt;w']</default><summary>현재 창을 W 슬롯에 등록</summary></key>
+    <key name="window-focus-w" type="as"><default>['&lt;Super&gt;w']</default><summary>W 슬롯의 창으로 전환</summary></key>
+    <key name="window-register-e" type="as"><default>['&lt;Super&gt;&lt;Shift&gt;e']</default><summary>현재 창을 E 슬롯에 등록</summary></key>
+    <key name="window-focus-e" type="as"><default>['&lt;Super&gt;e']</default><summary>E 슬롯의 창으로 전환</summary></key>
+    <key name="window-register-r" type="as"><default>['&lt;Super&gt;&lt;Shift&gt;r']</default><summary>현재 창을 R 슬롯에 등록</summary></key>
+    <key name="window-focus-r" type="as"><default>['&lt;Super&gt;r']</default><summary>R 슬롯의 창으로 전환</summary></key>
+    <key name="window-shortcut-backup" type="s"><default>'[]'</default><summary>창 전환 키와 겹치는 기존 단축키 복원 기록</summary></key>
+  </schema>
+</schemalist>

@@ -287,7 +287,8 @@ public:
         inputChannels_=a.dwSamplesPerFrame;outputChannels_=b.dwSamplesPerFrame;maxFrames_=in[0]->u32MaxFrameCount;rate_=static_cast<unsigned>(a.fFramesPerSecond);
         eq_.reset();if(stream_)stream_->reset();
         if(capture_&&neuralConfigured_){
-            try{neural_=std::make_unique<NeuralStream>(neuralDirectory_);}
+            // Inference runs in PersonalToolsNpuHost.exe; this only claims a shared channel.
+            try{neural_=std::make_unique<NeuralStream>();}
             catch(...){return E_OUTOFMEMORY;}
         }
         // A discovery-created instance can subsequently be locked for a real
@@ -380,7 +381,12 @@ public:
                 InterlockedExchange(&m.linearReductionDB100,0);
                 InterlockedExchange(&m.neuralState,neural_->state());
                 InterlockedExchange64(&m.neuralBlocks,neural_->completed());
-            }else{InterlockedExchange(&m.neuralState,0);InterlockedExchange64(&m.neuralBlocks,0);}
+                InterlockedExchange(&m.neuralRestarts,neural_->restarts());
+                InterlockedExchange(&m.neuralFailure,neural_->failure());
+            }else{
+                InterlockedExchange(&m.neuralState,0);InterlockedExchange64(&m.neuralBlocks,0);
+                InterlockedExchange(&m.neuralRestarts,0);InterlockedExchange(&m.neuralFailure,0);
+            }
             InterlockedExchange64(&m.diagnosticInstance,
                 (static_cast<LONG64>(GetCurrentProcessId())<<32) | (reinterpret_cast<std::uintptr_t>(this)&0xffffffffu));
         }

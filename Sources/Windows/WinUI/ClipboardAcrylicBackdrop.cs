@@ -5,8 +5,9 @@ using Microsoft.UI.Xaml.Media;
 
 namespace PersonalTools;
 
-// Thin desktop acrylic is intended for transient surfaces. Retain the default
-// XAML configuration so Windows owns theme, activation and accessibility policy.
+// Base desktop acrylic: Thin let bright windows behind the panel wash dark-theme
+// cards to mid-gray and drop caption contrast below 2:1. Retain the default XAML
+// configuration so Windows owns theme, activation and accessibility policy.
 internal sealed class ClipboardAcrylicBackdrop : SystemBackdrop
 {
     private DesktopAcrylicController? controller;
@@ -14,7 +15,7 @@ internal sealed class ClipboardAcrylicBackdrop : SystemBackdrop
     {
         base.OnTargetConnected(target, root);
         if (!DesktopAcrylicController.IsSupported()) return;
-        controller = new DesktopAcrylicController { Kind = DesktopAcrylicKind.Thin };
+        controller = new DesktopAcrylicController { Kind = DesktopAcrylicKind.Base };
         controller.SetSystemBackdropConfiguration(GetDefaultSystemBackdropConfiguration(target, root));
         controller.AddSystemBackdropTarget(target);
     }

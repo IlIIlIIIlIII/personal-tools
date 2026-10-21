@@ -1,6 +1,9 @@
 # Personal Tools
 
-Windows 앱은 사운드 제어와 Antigravity CLI 브릿지를 탭으로 제공하는 도구 모음입니다.
+Windows 앱은 클립보드 보관함·빠른 패널, 창 빠른 전환(Win+1~4/Q/W/E/R), 사운드(스피커 EQ와 NPU 반향 제거),
+Antigravity CLI 브릿지, 진단을 Windows 11 디자인으로 제공하는 도구 모음입니다
+([화면 시안](docs/design/windows-fluent-2026-10-20/index.html)). HDR, 화면 꺼짐 방지, vLLM, 마이크 음소거 단축키는
+이번 Windows 범위에서 빌드에서 제외했습니다(소스는 보존).
 **Antigravity 브릿지** 탭에서 CLI·모델 확인 → 브릿지 시작 후, OpenAI 호환 클라이언트에
 표시된 Base URL과 API 키를 입력하세요. [연동 범위와 사용 안내](docs/antigravity-bridge.md).
 앱 표시 이름은 **Personal Tools**, 실행 파일과 내부 식별자는 `PersonalTools`, 저장소 이름은 `personal-tools`로 통일합니다.

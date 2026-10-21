@@ -72,11 +72,11 @@ internal static class ClipboardFeatureChecks
         check(store.CategoryIds(url.Id).Length == 0 && store.Entries.Count == 3, "entry deletion removes membership durably");
         check(store.Categories.Single().Id == links.Id, "empty collection survives restart");
         var negative = ClipboardPanelBounds.AtBottom(-2560, -500, 2560, 1400, 144);
-        check(negative == new ClipboardPanelBounds(-2560, 390, 2560, 510), "negative-origin monitor and 150 percent DPI");
-        check(ClipboardPanelBounds.AtBottom(48, 0, 1872, 1040, 96) == new ClipboardPanelBounds(48, 700, 1872, 340), "work area respects side and bottom taskbars");
+        check(negative == new ClipboardPanelBounds(-2560, 444, 2560, 456), "negative-origin monitor and 150 percent DPI");
+        check(ClipboardPanelBounds.AtBottom(48, 0, 1872, 1040, 96) == new ClipboardPanelBounds(48, 736, 1872, 304), "work area respects side and bottom taskbars");
         check(ClipboardPanelBounds.AtBottom(0, 0, 800, 300, 192).Height == 300, "short monitor clamps panel height");
-        check(ClipboardPanelBounds.AtBottom(0, 0, 1920, 1080, 0).Height == 340, "invalid DPI uses 96 default");
-        check(ClipboardPanelBounds.AtBottom(-2560, -500, 2560, 1400, 144, floating: true) == new ClipboardPanelBounds(-2542, 372, 2524, 510), "floating acrylic margin scales on negative-origin display");
+        check(ClipboardPanelBounds.AtBottom(0, 0, 1920, 1080, 0).Height == 304, "invalid DPI uses 96 default");
+        check(ClipboardPanelBounds.AtBottom(-2560, -500, 2560, 1400, 144, floating: true) == new ClipboardPanelBounds(-2542, 426, 2524, 456), "floating acrylic margin scales on negative-origin display");
         check(ClipboardPanelBounds.AtBottom(0, 0, 800, 300, 192, floating: true) == new ClipboardPanelBounds(24, 24, 752, 252), "floating panel stays inside short work area");
     }
 }

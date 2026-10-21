@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PlatformTarget>x64</PlatformTarget>
+    <SelfContained>true</SelfContained>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <WindowsAppSdkBootstrapInitialize>false</WindowsAppSdkBootstrapInitialize>
+    <WindowsAppSdkDeploymentManagerInitialize>false</WindowsAppSdkDeploymentManagerInitialize>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Assets/ToggleOn.png" LogicalName="PersonalTools.HdrWidget.ToggleOn.png"/>
+    <EmbeddedResource Include="Assets/ToggleOff.png" LogicalName="PersonalTools.HdrWidget.ToggleOff.png"/>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260804001" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.6584" />
+    <Compile Include="../WinUI/HdrModels.cs" Link="HdrModels.cs" />
+    <Compile Include="../WinUI/DisplayPowerModels.cs" Link="DisplayPowerModels.cs" />
+    <Compile Include="../WinUI/HdrWire.cs" Link="HdrWire.cs" />
+    <Compile Include="../WinUI/VllmModels.cs" Link="VllmModels.cs" />
+    <Compile Include="../WinUI/VllmProgress.cs" Link="VllmProgress.cs" />
+  </ItemGroup>
+</Project>

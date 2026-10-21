@@ -35,7 +35,8 @@ async Task Fails(Func<Task> action, string name)
 // Keep generated test artifacts for inspection; never touch the user's real archive.
 string root = Path.Combine(Path.GetTempPath(), "PersonalToolsClipboardTests", Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
-var settings = new ClipboardSettings { ArchivePath = Path.Combine(root, "archive") };
+var settings = new ClipboardSettings { ArchivePath = Path.Combine(root, "archive"), AiSearchEnabled = true };
+Check(!new ClipboardSettings().AiSearchEnabled && !new ClipboardSettings().AutoTagImages, "AI search and image tagging are off by default");
 var store = new ClipboardStore(settings);
 await store.LoadAsync();
 string note = "회의 메모\n산호 프로젝트 예약 코드: CORAL-729\n" + new string('가', 8200) + "끝부분검색";
@@ -53,6 +54,11 @@ Check(await File.ReadAllTextAsync(store.PayloadPath(files, files.Attachments[0])
 await store.SetPinnedAsync(text, true);
 store = new ClipboardStore(settings); await store.LoadAsync();
 Check(store.Entries.Count == 3 && store.Entries.Single(x => x.Id == text.Id).Pinned, "restart recovers metadata and pin");
+Check(store.Entries[^1].Id == text.Id, "oldest record starts last");
+await store.TouchAsync(store.Entries[^1]);
+Check(store.Entries[0].Id == text.Id && await store.SaveAsync(new("Text", "notepad.exe", Text: note)) is null, "reused record moves first and is not captured again");
+store = new ClipboardStore(settings); await store.LoadAsync();
+Check(store.Entries[0].Id == text.Id && store.Entries[0].Pinned, "reuse order survives restart");
 var pending = Path.Combine(settings.ArchivePath, ".pending-incomplete"); Directory.CreateDirectory(pending);
 await File.WriteAllTextAsync(Path.Combine(pending, "metadata.json"), "{");
 await store.LoadAsync(); Check(store.Entries.Count == 3, "incomplete commits invisible");
@@ -79,6 +85,10 @@ await store.DeleteAsync(image); Check(!store.Entries.Any(x => x.Id == image.Id),
 var parsed = ClipboardSearch.Parse(JsonSerializer.Serialize(new { answer = "answer", itemIds = new[] { text.Id, "unknown", text.Id }, limitations = Array.Empty<string>() }), store.Entries);
 Check(parsed.ItemIds.SequenceEqual([text.Id]) && parsed.Limitations.Length == 1, "unknown result IDs removed and deduplicated");
 await Fails(() => Task.Run(() => ClipboardSearch.Parse("not-json", store.Entries)), "invalid search output rejected");
+var withEvidence = ClipboardSearch.Parse(JsonSerializer.Serialize(new { answer = "a", itemIds = new[] { text.Id }, limitations = Array.Empty<string>(),
+    evidence = new object[] { new { id = text.Id, kind = "content" }, new { id = "unknown", kind = "content" }, new { id = text.Id, kind = "bogus" } } }), store.Entries);
+Check(withEvidence.Evidence!.Count == 1 && withEvidence.Evidence[text.Id] == "content", "search evidence kept only for returned records and known kinds");
+Check(parsed.Evidence!.Count == 0, "search results without evidence remain valid");
 
 var listener = new TcpListener(IPAddress.Loopback, 0); listener.Start(); int port = ((IPEndPoint)listener.LocalEndpoint).Port; listener.Stop();
 bool live = args.Contains("--live");
@@ -89,6 +99,8 @@ var result = await search.SearchClipboardAsync("산호 프로젝트 예약 코�
 Check(result.ItemIds.Contains(text.Id) && result.Answer.Contains("CORAL-729"), live ? "LIVE: agent reads archive files and returns correct ID + content" : "CLI cwd, exact model, read-only arguments, file reading and result mapping");
 if (!live)
 {
+    var disabled = new ClipboardSearch(bridge, new ClipboardStore(settings with { AiSearchEnabled = false }), () => bridgeSettings);
+    await Fails(() => disabled.SearchClipboardAsync("산호 프로젝트", default), "AI search refuses to run while disabled");
     try { await search.SearchClipboardAsync("DENIED_FIXTURE", default); Check(false, "denied tool produces actionable message"); }
     catch (InvalidOperationException error) { Check(error.Message.Contains("권한"), "denied tool produces actionable message instead of invalid JSON"); }
     var emptyScope = await search.SearchClipboardAsync("empty scope", Array.Empty<string>(), default);
@@ -136,4 +148,5 @@ else
     Check(result.ItemIds.Length == 0 && !result.Answer.Contains("AURORA-582"), "LIVE: category scope excludes actual match and returns no fabricated match");
 }
 await ClipboardFeatureChecks.RunAsync(root, Check, Fails);
+await ImageTaggingChecks.RunAsync(root, Check);
 Console.WriteLine($"{checks} clipboard checks passed. Test archive: {store.Root}");

@@ -3,6 +3,7 @@
 #include "REWParser.hpp"
 #include <mmdeviceapi.h>
 #include <functiondiscoverykeys_devpkey.h>
+#include <setupapi.h>
 #include <wrl/client.h>
 #include <fstream>
 #include <iomanip>
@@ -71,20 +72,57 @@ std::wstring profile(const std::filesystem::path& path,Channel channel) {
     }
     return r+L"]}";
 }
-std::wstring meter(const Meter& m,bool connected,bool capture=false) {
+// The NPU's own device name from the ComputeAccelerator class, for display only.
+std::wstring npuName() {
+    static const std::wstring cached=[]{
+        static constexpr GUID computeAccelerator{0xf01a9d53,0x3ff6,0x48d2,{0x9f,0x97,0xc8,0xa7,0x00,0x4b,0xe1,0x0c}};
+        HDEVINFO set=SetupDiGetClassDevsW(&computeAccelerator,nullptr,nullptr,DIGCF_PRESENT);
+        if(set==INVALID_HANDLE_VALUE)return std::wstring();
+        std::wstring name;SP_DEVINFO_DATA info{};info.cbSize=sizeof(info);
+        for(DWORD i=0;name.empty()&&SetupDiEnumDeviceInfo(set,i,&info);++i){
+            for(const DWORD property:{static_cast<DWORD>(SPDRP_FRIENDLYNAME),static_cast<DWORD>(SPDRP_DEVICEDESC)}){
+                wchar_t buffer[256]{};
+                if(SetupDiGetDeviceRegistryPropertyW(set,&info,property,nullptr,reinterpret_cast<BYTE*>(buffer),sizeof(buffer)-sizeof(wchar_t),nullptr)&&buffer[0]){name=buffer;break;}
+            }
+        }
+        SetupDiDestroyDeviceInfoList(set);
+        return name;
+    }();
+    return cached;
+}
+// counters=false omits per-callback totals so the event log records state changes only.
+std::wstring meter(const Meter& m,bool connected,bool capture=false,bool counters=true) {
     LARGE_INTEGER now{},frequency{}; QueryPerformanceCounter(&now);QueryPerformanceFrequency(&frequency);
     const auto last=readWide(&m.lastQpc);
     const bool active=connected&&last>0&&now.QuadPart>=last&&now.QuadPart-last<=frequency.QuadPart*3;
     std::wstring state=!connected?L"장치 연결 대기":!active?L"오디오 처리 확인 대기":readWord(&m.enabled)?L"처리 중":L"바이패스";
     if(capture&&active&&readWord(&m.enabled)&&!readWord(&m.reference)) state=L"스피커 참조 대기 · 반향 제거 확인 안 됨";
-    if(active&&readWord(&m.enabled)&&readWord(&m.neuralState)!=0){
-        const auto neural=readWord(&m.neuralState);
-        state=neural<0?L"NPU 오류 · 원음 출력":neural==1?L"NPU 모델 준비 중":
+    const auto neural=readWord(&m.neuralState);
+    if(active&&readWord(&m.enabled)&&neural!=0){
+        state=neural==-2?L"NPU 처리 프로그램 대기 · 원음 출력":neural<0?L"NPU 복구 중 · 원음 출력":neural==1?L"NPU 모델 준비 중":
             readWord(&m.reference)?L"DTLN-AEC 256 · NPU 처리 중":L"NPU · 스피커 참조 대기";
     }
     return L"{\"state\":"+quote(state)+L",\"active\":"+(active?L"true":L"false")+
         L",\"enabled\":"+((active&&readWord(&m.enabled))?L"true":L"false")+
-        L",\"rate\":"+std::to_wstring(readWord(&m.rate))+L",\"error\":"+std::to_wstring(readWord(&m.error))+L"}";
+        L",\"rate\":"+std::to_wstring(readWord(&m.rate))+L",\"error\":"+std::to_wstring(readWord(&m.error))+
+        L",\"neuralState\":"+std::to_wstring(active?neural:0)+
+        L",\"neuralRestarts\":"+std::to_wstring(readWord(&m.neuralRestarts))+
+        L",\"neuralFailure\":"+std::to_wstring(readWord(&m.neuralFailure))+
+        (counters?L",\"neuralBlocks\":"+std::to_wstring(readWide(&m.neuralBlocks))+
+            L",\"missingFrames\":"+std::to_wstring(readWide(&m.missingFrames)):std::wstring())+L"}";
+}
+// Initial REW filters: E:\Speaker when present, otherwise the EQ folder shipped
+// beside the ui folder (package root or Program Files\PersonalTools).
+std::filesystem::path initialFilters() {
+    const std::filesystem::path speaker=L"E:\\Speaker";
+    std::error_code error;
+    if(std::filesystem::exists(speaker/L"L.txt",error)&&std::filesystem::exists(speaker/L"R.txt",error))return speaker;
+    HMODULE module=nullptr;
+    GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS|GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+        reinterpret_cast<LPCWSTR>(&initialFilters),&module);
+    wchar_t path[32768]{};
+    GetModuleFileNameW(module,path,32768);
+    return std::filesystem::path(path).parent_path().parent_path()/L"EQ";
 }
 struct Session {
     SharedFile shared; std::wstring result,lastLog;
@@ -116,7 +154,7 @@ API const wchar_t* __cdecl MT_Snapshot(void* handle) noexcept {
         Configuration c;LONG revision=0;
         const bool ready=s.shared.open()&&s.shared.read(c,revision);
         const auto outputs=devices(eRender),inputs=devices(eCapture);
-        const auto directory=ready?dataDirectory():std::filesystem::path(L"E:\\Speaker");
+        const auto directory=ready?dataDirectory():initialFilters();
         Meter empty{};const auto* data=ready?s.shared.data():nullptr;
         const auto render=meter(data?data->render:empty,contains(outputs,c.renderId));
         const auto capture=meter(data?data->capture:empty,contains(inputs,c.captureId),true);
@@ -127,8 +165,10 @@ API const wchar_t* __cdecl MT_Snapshot(void* handle) noexcept {
             L",\"left\":"+profile(directory/L"L.txt",Channel::left)+L",\"right\":"+profile(directory/L"R.txt",Channel::right)+
             L",\"render\":"+render+L",\"capture\":"+capture+
             L",\"reference\":"+((data&&readWord(&data->capture.reference))?L"true":L"false")+
-            L",\"clipping\":"+((data&&readWord(&data->capture.clipping))?L"true":L"false")+L"}";
-        if(ready)logStatus(s,L"EQ "+render+L" / AEC "+capture);
+            L",\"clipping\":"+((data&&readWord(&data->capture.clipping))?L"true":L"false")+
+            L",\"npuDevice\":"+quote(npuName())+L"}";
+        if(ready)logStatus(s,L"EQ "+meter(data->render,contains(outputs,c.renderId),false,false)+
+            L" / AEC "+meter(data->capture,contains(inputs,c.captureId),true,false));
     }catch(const std::exception& e){s.result=L"{\"error\":"+quote(wide(e.what()))+L"}";}
     catch(...){s.result=L"{\"error\":\"오디오 상태를 읽지 못했습니다\"}";}
     return s.result.c_str();
@@ -170,8 +210,9 @@ API int __cdecl MT_Initialize(const wchar_t* render,const wchar_t* capture) noex
         const auto dir=dataDirectory();
         auto l=parseREWConfigurablePEQFile(dir/L"L.txt",Channel::left);
         auto r=parseREWConfigurablePEQFile(dir/L"R.txt",Channel::right);
-        if(!l)l=importREWConfigurablePEQFile(L"E:\\Speaker\\L.txt",dir/L"L.txt",Channel::left);
-        if(!r)r=importREWConfigurablePEQFile(L"E:\\Speaker\\R.txt",dir/L"R.txt",Channel::right);
+        const auto initial=initialFilters();
+        if(!l)l=importREWConfigurablePEQFile(initial/L"L.txt",dir/L"L.txt",Channel::left);
+        if(!r)r=importREWConfigurablePEQFile(initial/L"R.txt",dir/L"R.txt",Channel::right);
         if(!l||!r)return 5;
         std::string error;if(!prepareConfiguration(c,l.filters,r.filters,error))return 6;
         wcscpy_s(c.renderId,render);wcscpy_s(c.captureId,capture);c.eqEnabled=c.aecEnabled=1;

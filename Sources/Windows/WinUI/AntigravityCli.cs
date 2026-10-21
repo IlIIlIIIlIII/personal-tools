@@ -7,7 +7,7 @@ namespace PersonalTools;
 
 internal static class AntigravityCli
 {
-    private static Process CreateProcess(BridgeSettings settings, IEnumerable<string> args, string? workspace = null)
+    internal static Process CreateProcess(BridgeSettings settings, IEnumerable<string> args, string? workspace = null)
     {
         var directory = workspace ?? Path.Combine(BridgeSettings.DirectoryPath, "workspace");
         Directory.CreateDirectory(directory);

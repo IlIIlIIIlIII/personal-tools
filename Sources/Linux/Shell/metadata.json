@@ -1,0 +1,9 @@
+{
+  "uuid": "personal-tools@griplabs.io",
+  "name": "Personal Tools",
+  "description": "클립보드 빠른 패널, 오디오와 HDR, 로컬 AI 제어",
+  "shell-version": ["50"],
+  "version": 1,
+  "settings-schema": "org.gnome.shell.extensions.personal-tools",
+  "url": "https://github.com/griplabs/personal-tools"
+}

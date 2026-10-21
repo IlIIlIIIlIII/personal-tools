@@ -1,0 +1,964 @@
+<title>Personal Tools Windows 시안</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: a quiet review board. Each numbered screen has a caption and a stage that scales a true-size Windows 11 mock to fit. */
+:root{
+  --board:#E9EDF2;--board-2:#DFE5EC;--ink:#12161C;--ink-2:#46505E;--ink-3:#6E7A8B;--rule:rgba(18,30,48,.12);--pick:#0067C0;
+  --font-ui:"Segoe UI Variable Text","Segoe UI Variable","Segoe UI","Malgun Gothic",system-ui,sans-serif;
+  --font-display:"Segoe UI Variable Display","Segoe UI Variable","Segoe UI","Malgun Gothic",system-ui,sans-serif;
+  --font-mono:"Cascadia Mono","Cascadia Code",Consolas,"D2Coding",monospace;
+  --font-icon:"Segoe Fluent Icons","Segoe MDL2 Assets";
+  /* Windows 11 Fluent theme resources, light */
+  --f-mica:#F3F3F3;--f-win-stroke:rgba(0,0,0,.12);--f-layer:#F9F9F9;--f-layer-stroke:rgba(0,0,0,.0578);
+  --f-card:rgba(255,255,255,.7);--f-card-stroke:rgba(0,0,0,.0578);--f-card-alt:rgba(246,246,246,.6);
+  --f-text:rgba(0,0,0,.894);--f-text-2:rgba(0,0,0,.606);--f-text-3:rgba(0,0,0,.446);
+  --f-ctrl:rgba(255,255,255,.7);--f-ctrl-sel:#FFFFFF;--f-ctrl-stroke:rgba(0,0,0,.0578);--f-ctrl-edge:rgba(0,0,0,.1622);
+  --f-strong:rgba(0,0,0,.4458);--f-dash:rgba(0,0,0,.22);--f-input-focus:#FFFFFF;
+  --f-subtle:rgba(0,0,0,.0373);--f-subtle-2:rgba(0,0,0,.0241);
+  --f-accent:#0067C0;--f-on-accent:#FFFFFF;--f-accent-text:#0067C0;--f-accent-soft:rgba(0,103,192,.08);
+  --f-divider:rgba(0,0,0,.0803);--f-smoke:rgba(0,0,0,.3);
+  --f-acrylic:rgba(243,243,243,.9);--f-acrylic-solid:#F3F3F3;--f-flyout-stroke:rgba(0,0,0,.0578);
+  --f-dlg:#FFFFFF;--f-dlg-foot:#F3F3F3;
+  --f-ok:#0F7B0F;--f-warn:#9D5D00;--f-on-sev:#FFFFFF;--f-ok-bg:#DFF6DD;--f-warn-bg:#FFF4CE;
+  --t-text:#616161;--t-image:#038387;--t-url:#0067C0;--t-file:#A86B00;
+  --wall-1:#DCE8F7;--wall-2:#9EC5F2;--wall-3:#F5F8FC;--wall-glow:rgba(76,194,255,.45);--taskbar:rgba(238,238,238,.88);
+  --shadow-win:0 32px 64px rgba(0,0,0,.16),0 2px 21px rgba(0,0,0,.12);
+  --shadow-fly:0 8px 16px rgba(0,0,0,.14);
+  --shadow-dlg:0 32px 64px rgba(0,0,0,.19),0 2px 21px rgba(0,0,0,.15);
+  --app-blue:#0F6CBD;--app-slate:#3D4652;--app-teal:#0E7C86;--app-amber:#C98A04;--app-indigo:#5B5FC7;--app-violet:#7B4FB8;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --board:#111317;--board-2:#191C21;--ink:#EDF0F4;--ink-2:#AAB3BF;--ink-3:#808A97;--rule:rgba(255,255,255,.1);--pick:#4CC2FF;
+  --f-mica:#202020;--f-win-stroke:rgba(255,255,255,.09);--f-layer:#272727;--f-layer-stroke:rgba(0,0,0,.3);
+  --f-card:rgba(255,255,255,.0512);--f-card-stroke:rgba(0,0,0,.14);--f-card-alt:rgba(255,255,255,.0326);
+  --f-text:#FFFFFF;--f-text-2:rgba(255,255,255,.786);--f-text-3:rgba(255,255,255,.544);
+  --f-ctrl:rgba(255,255,255,.0605);--f-ctrl-sel:rgba(255,255,255,.1);--f-ctrl-stroke:rgba(255,255,255,.0698);--f-ctrl-edge:rgba(255,255,255,.0465);
+  --f-strong:rgba(255,255,255,.544);--f-dash:rgba(255,255,255,.2);--f-input-focus:#1F1F1F;
+  --f-subtle:rgba(255,255,255,.0605);--f-subtle-2:rgba(255,255,255,.0419);
+  --f-accent:#4CC2FF;--f-on-accent:#000000;--f-accent-text:#99EBFF;--f-accent-soft:rgba(76,194,255,.12);
+  --f-divider:rgba(255,255,255,.0837);--f-smoke:rgba(0,0,0,.3);
+  --f-acrylic:rgba(32,32,32,.9);--f-acrylic-solid:#202020;--f-flyout-stroke:rgba(0,0,0,.3);
+  --f-dlg:#2B2B2B;--f-dlg-foot:#202020;
+  --f-ok:#6CCB5F;--f-warn:#FCE100;--f-on-sev:#000000;--f-ok-bg:#393D1B;--f-warn-bg:#433519;
+  --t-text:#C8C8C8;--t-image:#4FD1D9;--t-url:#4CC2FF;--t-file:#F2C04C;
+  --wall-1:#0A2A66;--wall-2:#1D63D6;--wall-3:#050B18;--wall-glow:rgba(76,194,255,.4);--taskbar:rgba(28,28,28,.88);
+  --shadow-win:0 32px 64px rgba(0,0,0,.42),0 2px 21px rgba(0,0,0,.32);
+  --shadow-fly:0 8px 16px rgba(0,0,0,.32);
+  --shadow-dlg:0 32px 64px rgba(0,0,0,.45),0 2px 21px rgba(0,0,0,.35);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --board:#111317;--board-2:#191C21;--ink:#EDF0F4;--ink-2:#AAB3BF;--ink-3:#808A97;--rule:rgba(255,255,255,.1);--pick:#4CC2FF;
+  --f-mica:#202020;--f-win-stroke:rgba(255,255,255,.09);--f-layer:#272727;--f-layer-stroke:rgba(0,0,0,.3);
+  --f-card:rgba(255,255,255,.0512);--f-card-stroke:rgba(0,0,0,.14);--f-card-alt:rgba(255,255,255,.0326);
+  --f-text:#FFFFFF;--f-text-2:rgba(255,255,255,.786);--f-text-3:rgba(255,255,255,.544);
+  --f-ctrl:rgba(255,255,255,.0605);--f-ctrl-sel:rgba(255,255,255,.1);--f-ctrl-stroke:rgba(255,255,255,.0698);--f-ctrl-edge:rgba(255,255,255,.0465);
+  --f-strong:rgba(255,255,255,.544);--f-dash:rgba(255,255,255,.2);--f-input-focus:#1F1F1F;
+  --f-subtle:rgba(255,255,255,.0605);--f-subtle-2:rgba(255,255,255,.0419);
+  --f-accent:#4CC2FF;--f-on-accent:#000000;--f-accent-text:#99EBFF;--f-accent-soft:rgba(76,194,255,.12);
+  --f-divider:rgba(255,255,255,.0837);--f-smoke:rgba(0,0,0,.3);
+  --f-acrylic:rgba(32,32,32,.9);--f-acrylic-solid:#202020;--f-flyout-stroke:rgba(0,0,0,.3);
+  --f-dlg:#2B2B2B;--f-dlg-foot:#202020;
+  --f-ok:#6CCB5F;--f-warn:#FCE100;--f-on-sev:#000000;--f-ok-bg:#393D1B;--f-warn-bg:#433519;
+  --t-text:#C8C8C8;--t-image:#4FD1D9;--t-url:#4CC2FF;--t-file:#F2C04C;
+  --wall-1:#0A2A66;--wall-2:#1D63D6;--wall-3:#050B18;--wall-glow:rgba(76,194,255,.4);--taskbar:rgba(28,28,28,.88);
+  --shadow-win:0 32px 64px rgba(0,0,0,.42),0 2px 21px rgba(0,0,0,.32);
+  --shadow-fly:0 8px 16px rgba(0,0,0,.32);
+  --shadow-dlg:0 32px 64px rgba(0,0,0,.45),0 2px 21px rgba(0,0,0,.35);
+  color-scheme:dark}
+
+/* Review board */
+html,body{background:var(--board)}
+body{color:var(--ink);font-family:var(--font-ui);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.page{max-width:1240px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:56px 96px;display:flex;flex-direction:column;gap:88px}
+.intro{display:grid;gap:28px}
+.eyebrow{margin:0;font-size:13px;letter-spacing:.04em;color:var(--ink-3)}
+h1{margin:0;font-family:var(--font-display);font-weight:600;font-size:clamp(32px,5vw,48px);line-height:1.12;letter-spacing:-.01em;text-wrap:balance}
+.lede{margin:0;max-width:64ch;color:var(--ink-2);font-size:16px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:24px 40px;border-top:1px solid var(--rule);padding-top:24px}
+.fact h2{margin:0 0 10px;font-size:13px;font-weight:600;color:var(--ink-3);letter-spacing:.02em}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:14px;background:var(--board-2);font-size:13px;color:var(--ink)}
+.chip.off{color:var(--ink-3);text-decoration:line-through;text-decoration-color:var(--ink-3)}
+.chip em{font-style:normal;font-size:11px;font-weight:600;color:var(--pick)}
+.fact ul{margin:0;padding-left:18px;color:var(--ink-2);font-size:14px;display:grid;gap:4px}
+.controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px 24px}
+.themes{display:inline-flex;padding:3px;border-radius:8px;background:var(--board-2);gap:2px}
+.themes button{font:inherit;font-size:13px;height:30px;padding:0 14px;border:0;border-radius:6px;background:transparent;color:var(--ink-2);cursor:pointer}
+.themes button[aria-pressed="true"]{background:var(--board);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.toc{display:flex;flex-wrap:wrap;gap:6px 20px;margin:0;padding:0;list-style:none;font-size:14px}
+.toc a{color:var(--ink-2);text-decoration:none;display:inline-flex;gap:8px}
+.toc a span{color:var(--ink-3);font-variant-numeric:tabular-nums}
+.toc a:hover{color:var(--ink)}
+:focus-visible{outline:2px solid var(--pick);outline-offset:2px;border-radius:4px}
+.shot{display:grid;gap:20px;scroll-margin-top:24px}
+.cap{display:grid;grid-template-columns:56px minmax(0,1fr);align-items:baseline}
+.no{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--pick);font-variant-numeric:tabular-nums}
+.cap h2{margin:0;font-family:var(--font-display);font-size:24px;line-height:1.25;font-weight:600;text-wrap:balance}
+.cap p{margin:8px 0 0;max-width:72ch;color:var(--ink-2)}
+.cap .delta{font-size:14px;color:var(--ink-3)}
+.cap .delta b{font-weight:600;color:var(--ink-2);margin-right:8px}
+@media (max-width:560px){.cap{grid-template-columns:1fr;gap:4px}}
+.stage{border-radius:12px;background:var(--board-2);overflow-x:auto;overflow-y:hidden}
+.outro{border-top:1px solid var(--rule);padding-top:24px;color:var(--ink-2);max-width:72ch;margin:0}
+
+/* Fluent mock kit (true size; the stage scales it) */
+.frame{box-sizing:border-box;padding:40px;font-family:var(--font-ui);color:var(--f-text);font-size:14px;line-height:20px;text-align:left}
+.frame *{box-sizing:border-box}
+.g{font-family:var(--font-icon);font-style:normal;font-weight:400;font-size:16px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;flex:none;-webkit-font-smoothing:antialiased}
+.spk{width:14px;height:14px;fill:currentColor;flex:none}
+.row{display:flex;align-items:center}
+.g4{gap:4px}.g8{gap:8px}.g12{gap:12px}
+.grow{flex:1}
+.win{position:relative;width:1120px;background:var(--f-mica);border:1px solid var(--f-win-stroke);border-radius:8px;box-shadow:var(--shadow-win);overflow:hidden;display:flex;flex-direction:column}
+.tb{height:48px;display:flex;align-items:center;gap:12px;padding-left:16px;flex:none;font-size:12px;color:var(--f-text)}
+.appico{width:16px;height:16px;flex:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='.5' y='.5' width='15' height='15' rx='3.6' fill='%236B7339'/%3E%3Cg stroke='%23F2F1EC' stroke-width='1.3' stroke-linecap='round'%3E%3Cpath d='M3.6 4.8h8.8M3.6 8h8.8M3.6 11.2h8.8'/%3E%3C/g%3E%3Cg fill='%23F2F1EC'%3E%3Crect x='4.9' y='3.3' width='2.2' height='3' rx='1.1'/%3E%3Crect x='8.9' y='6.5' width='2.2' height='3' rx='1.1'/%3E%3Crect x='4.9' y='9.7' width='2.2' height='3' rx='1.1'/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat}
+.caps{margin-left:auto;display:flex;align-self:flex-start}
+.caps .g{width:46px;height:32px;font-size:10px;color:var(--f-text)}
+.wb{flex:1;display:grid;grid-template-columns:220px minmax(0,1fr);min-height:0}
+.nav{display:flex;flex-direction:column;gap:2px;padding:0 0 8px}
+.ni{position:relative;display:flex;align-items:center;gap:16px;height:36px;padding:0 12px;margin:0 6px;border-radius:4px;color:var(--f-text);white-space:nowrap}
+.ni.sel{background:var(--f-subtle)}
+.ni.sel::before{content:"";position:absolute;left:0;top:10px;width:3px;height:16px;border-radius:2px;background:var(--f-accent)}
+.nav-foot{margin-top:auto;display:flex;flex-direction:column;gap:2px}
+.layer{position:relative;background:var(--f-layer);border-top:1px solid var(--f-layer-stroke);border-left:1px solid var(--f-layer-stroke);border-top-left-radius:8px;padding:28px 36px 0;display:flex;flex-direction:column;gap:16px;min-width:0;overflow:hidden}
+.phead{display:flex;align-items:center;gap:12px;min-height:36px}
+.t-title{font-family:var(--font-display);font-size:28px;line-height:36px;font-weight:600}
+.lead{margin:-8px 0 0;color:var(--f-text-2)}
+.crumb{display:flex;align-items:center;gap:12px}
+.crumb .up{color:var(--f-text-2)}
+.crumb .g{font-size:14px;color:var(--f-text-2)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:32px;padding:0 12px;border-radius:4px;background:var(--f-ctrl);border:1px solid var(--f-ctrl-stroke);border-bottom-color:var(--f-ctrl-edge);color:var(--f-text);font-size:14px;white-space:nowrap;flex:none}
+.btn.accent{background:var(--f-accent);color:var(--f-on-accent);border-color:rgba(255,255,255,.08);border-bottom-color:rgba(0,0,0,.35)}
+.btn.subtle{background:transparent;border-color:transparent}
+.btn.ib{width:32px;padding:0}
+.btn.sm{height:28px;padding:0 10px;font-size:13px}
+.btn.sm.ib{width:28px;padding:0}
+.btn.combo{justify-content:flex-start}
+.btn.combo .g{margin-left:auto;font-size:12px;color:var(--f-text-2)}
+.input{display:flex;align-items:center;gap:8px;height:32px;padding:0 10px 0 11px;border-radius:4px;background:var(--f-ctrl);border:1px solid var(--f-ctrl-stroke);border-bottom-color:var(--f-strong);color:var(--f-text-3);flex:none;white-space:nowrap;overflow:hidden}
+.input.focus{background:var(--f-input-focus);border-bottom:2px solid var(--f-accent)}
+.input .val{color:var(--f-text)}
+.input .hint{margin-left:auto;font-size:12px;color:var(--f-text-3)}
+.input .g{font-size:14px;color:var(--f-text-2)}
+.input .hint + .g{margin-left:8px}
+.input.search .g:last-child{margin-left:auto}
+.input.search .hint + .g{margin-left:8px}
+.caret{display:inline-block;width:1px;height:16px;background:var(--f-text);margin-left:-6px;animation:blink 1.1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.seg{display:inline-flex;padding:2px;gap:2px;border-radius:5px;background:var(--f-subtle-2);border:1px solid var(--f-ctrl-stroke);flex:none}
+.seg>span{position:relative;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 12px;border-radius:4px;font-size:13px;color:var(--f-text-2);white-space:nowrap}
+.seg>span.sel{background:var(--f-ctrl-sel);color:var(--f-text);box-shadow:0 0 0 1px var(--f-ctrl-stroke),0 1px 0 var(--f-ctrl-edge)}
+.seg>span.sel::after{content:"";position:absolute;left:50%;bottom:1px;width:12px;height:3px;margin-left:-6px;border-radius:2px;background:var(--f-accent)}
+.tabs{display:flex;align-items:center;gap:2px;flex:none}
+.tabs>span{position:relative;display:inline-flex;align-items:center;height:36px;padding:0 12px;border-radius:4px;color:var(--f-text-2);white-space:nowrap}
+.tabs>span.sel{color:var(--f-text);font-weight:600}
+.tabs>span.sel::after{content:"";position:absolute;left:50%;bottom:2px;width:16px;height:3px;margin-left:-8px;border-radius:2px;background:var(--f-accent)}
+.tabs .tadd{color:var(--f-text-2);padding:0 10px}
+.tabs .tadd .g{font-size:12px}
+.kc{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 7px;border-radius:4px;background:var(--f-ctrl);border:1px solid var(--f-ctrl-stroke);border-bottom:2px solid var(--f-ctrl-edge);font-size:12px;font-weight:600;color:var(--f-text);white-space:nowrap}
+.kc.on{background:var(--f-accent);color:var(--f-on-accent);border-color:transparent;border-bottom-color:rgba(0,0,0,.3)}
+.plus{color:var(--f-text-3);font-size:12px;padding:0 2px}
+.keys{display:inline-flex;align-items:center;gap:2px;flex:none}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--f-text-3);flex:none}
+.dot.ok{background:var(--f-ok)}
+.dot.warn{background:var(--f-warn)}
+.pill{display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 12px;border-radius:14px;background:var(--f-card);border:1px solid var(--f-card-stroke);font-size:12px;color:var(--f-text);white-space:nowrap}
+.sev{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--f-ok);color:var(--f-on-sev);flex:none}
+.sev .g{font-size:9px;width:9px;height:9px;font-weight:700}
+.sev.big{width:36px;height:36px}
+.sev.big .g{font-size:18px;width:18px;height:18px}
+.badge{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 6px;border-radius:4px;font-size:11px;font-weight:600;background:var(--f-subtle);color:var(--f-text-2);white-space:nowrap}
+.badge.ok{background:var(--f-ok-bg);color:var(--f-ok)}
+.badge .g{font-size:9px;width:9px;height:9px}
+.app{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:4px;color:#FFFFFF;flex:none}
+.app .g{font-size:9px;width:9px;height:9px}
+.app.md{width:24px;height:24px;border-radius:6px}
+.app.md .g{font-size:13px;width:13px;height:13px}
+.app.big{width:36px;height:36px;border-radius:8px}
+.app.big .g{font-size:18px;width:18px;height:18px}
+.tg{display:inline-flex;align-items:center;gap:12px;color:var(--f-text);font-size:14px;flex:none}
+.sw{position:relative;width:40px;height:20px;border-radius:10px;border:1px solid var(--f-strong);background:var(--f-subtle-2);flex:none}
+.sw::after{content:"";position:absolute;top:50%;left:4px;width:12px;height:12px;margin-top:-6px;border-radius:50%;background:var(--f-text-2)}
+.sw.on{background:var(--f-accent);border-color:var(--f-accent)}
+.sw.on::after{left:auto;right:3px;width:14px;height:14px;margin-top:-7px;background:var(--f-on-accent)}
+.card{background:var(--f-card);border:1px solid var(--f-card-stroke);border-radius:8px}
+.stack{display:flex;flex-direction:column;gap:4px}
+.grp{display:flex;flex-direction:column;gap:4px}
+.grp-h{font-weight:600;padding:8px 0 4px}
+.sc{display:flex;align-items:center;gap:16px;min-height:68px;padding:12px 16px;background:var(--f-card);border:1px solid var(--f-card-stroke);border-radius:4px}
+.sc>.g{font-size:20px;width:20px;height:20px}
+.sc>.spk{width:20px;height:20px}
+.sct{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.sct .d{font-size:12px;line-height:16px;color:var(--f-text-2)}
+.sct .mono{font-family:var(--font-mono);font-size:12px}
+.scc{display:flex;align-items:center;gap:12px;flex:none;color:var(--f-text-2)}
+.chev{font-size:12px;color:var(--f-text-2)}
+.meter{height:4px;border-radius:2px;background:var(--f-subtle);margin-top:6px;width:280px;overflow:hidden}
+.meter i{display:block;height:100%;width:4%;border-radius:2px;background:var(--f-accent)}
+.fnote{margin:0;font-size:12px;line-height:16px;color:var(--f-text-3)}
+.fnote a{color:var(--f-accent-text);text-decoration:none}
+.sline{display:flex;align-items:center;gap:8px;height:40px;margin:auto -36px 0;padding:0 36px;border-top:1px solid var(--f-divider);font-size:12px;color:var(--f-text-2);flex:none;white-space:nowrap}
+.sline .kc{margin-left:8px}
+.sline .plus + .kc,.sline .kc + .plus{margin-left:0}
+
+/* Clipboard cards */
+.scroll{display:flex;flex-direction:column;gap:8px;min-height:0;flex:1;overflow:hidden}
+.day{font-weight:600;padding-top:4px}
+.cgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.clip{position:relative;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:10px;height:176px;padding:12px 14px;background:var(--f-card);border:1px solid var(--f-card-stroke);border-radius:8px;min-width:0}
+.clip.sel{border-color:transparent;box-shadow:0 0 0 2px var(--f-accent)}
+.clip.focus{outline:2px solid var(--f-text);outline-offset:3px}
+.ch{display:flex;align-items:center;gap:8px;font-size:12px;line-height:16px;color:var(--f-text-2);min-width:0;white-space:nowrap}
+.ch .ty{font-size:14px;width:14px;height:14px}
+.ty.tx{color:var(--t-text)}.ty.im{color:var(--t-image)}.ty.ul{color:var(--t-url)}.ty.fl{color:var(--t-file)}
+.ch .end{margin-left:auto}
+.ch .pin{font-size:12px;width:12px;height:12px;color:var(--f-text-2)}
+.ch .spk{width:12px;height:12px;color:var(--f-text-3)}
+.pv{margin:0;color:var(--f-text);display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.cf{display:flex;align-items:center;gap:6px;font-size:12px;line-height:16px;color:var(--f-text-3);white-space:nowrap;overflow:hidden}
+.cf .app{margin-right:2px}
+.thumb{border-radius:4px;overflow:hidden;min-height:0;border:1px solid var(--f-card-stroke)}
+.thumb svg{display:block;width:100%;height:100%}
+.lk{display:flex;flex-direction:column;gap:4px;padding:12px;border-radius:4px;background:var(--f-card-alt);border:1px solid var(--f-card-stroke);min-width:0;align-self:start}
+.lk b{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lk span{font-size:12px;line-height:16px;color:var(--f-accent-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.files{display:flex;flex-direction:column;gap:4px;align-self:start}
+.fr{display:flex;align-items:center;gap:8px;height:30px;padding:0 10px;border-radius:4px;background:var(--f-card-alt);border:1px solid var(--f-card-stroke);font-size:13px}
+.fr .g{font-size:13px;width:13px;height:13px;color:var(--f-text-2)}
+.fr span{margin-left:auto;font-size:12px;color:var(--f-text-3);font-variant-numeric:tabular-nums}
+.code{margin:0;align-self:start;font-family:var(--font-mono);font-size:12px;line-height:18px;padding:8px 10px;border-radius:4px;background:var(--f-card-alt);border:1px solid var(--f-card-stroke);white-space:pre;overflow:hidden;color:var(--f-text)}
+
+/* Desktop, taskbar, panel */
+.desk{position:relative;overflow:hidden;border-radius:8px;background:
+  radial-gradient(55% 75% at 72% 92%,var(--wall-glow),transparent 62%),
+  radial-gradient(48% 60% at 26% 108%,var(--wall-2),transparent 70%),
+  linear-gradient(165deg,var(--wall-3) 0%,var(--wall-1) 58%,var(--wall-2) 100%)}
+.taskbar{position:absolute;left:0;right:0;bottom:0;height:48px;background:var(--taskbar);border-top:1px solid var(--f-flyout-stroke);display:flex;align-items:center;justify-content:center;gap:4px;backdrop-filter:blur(30px)}
+.tbi{position:relative;width:40px;height:40px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--f-text)}
+.tbi.active{background:var(--f-subtle)}
+.tbi.run::after{content:"";position:absolute;bottom:1px;left:50%;width:6px;height:3px;margin-left:-3px;border-radius:2px;background:var(--f-text-3)}
+.tbi.active::after{width:16px;margin-left:-8px;background:var(--f-accent)}
+.logo{width:22px;height:22px;fill:var(--f-accent)}
+.tray{position:absolute;right:12px;top:0;bottom:0;display:flex;align-items:center;gap:12px;font-size:12px;line-height:16px;color:var(--f-text)}
+.tray .clock{text-align:right}
+.npw{position:absolute;left:240px;top:56px;width:760px;height:340px;border-radius:8px;background:var(--f-mica);border:1px solid var(--f-win-stroke);box-shadow:var(--shadow-win);overflow:hidden;display:flex;flex-direction:column}
+.np-tabs{display:flex;align-items:flex-end;height:40px;padding-left:8px;gap:4px}
+.np-tab{display:flex;align-items:center;gap:10px;height:32px;padding:0 10px 0 12px;border-radius:8px 8px 0 0;background:var(--f-layer);font-size:12px}
+.np-tab .g{font-size:10px;color:var(--f-text-2)}
+.np-tabs .caps{align-self:flex-start}
+.np-menu{display:flex;gap:4px;height:36px;align-items:center;padding:0 8px;background:var(--f-layer);font-size:13px}
+.np-menu span{padding:4px 10px;border-radius:4px}
+.np-text{flex:1;background:var(--f-layer);border-top:1px solid var(--f-divider);padding:16px 20px;font-size:15px;line-height:26px;color:var(--f-text)}
+.np-text p{margin:0}
+.qp{display:flex;flex-direction:column;gap:8px;padding:12px 20px 16px;border-radius:8px;background:var(--f-acrylic);border:1px solid var(--f-flyout-stroke);box-shadow:var(--shadow-dlg);backdrop-filter:blur(40px) saturate(1.2)}
+.desk .qp{position:absolute;left:12px;right:12px;bottom:60px;height:356px}
+.qp-top{display:flex;align-items:center;gap:12px}
+.qp-title{display:inline-flex;align-items:center;gap:10px;font-weight:600;margin-right:8px}
+.strip{position:relative;display:flex;gap:12px;padding:6px 6px 0;margin:0 -6px;min-height:0;flex:1;overflow:hidden}
+.strip .clip{width:236px;flex:none;height:212px}
+.strip::after{content:"";position:absolute;right:0;top:0;bottom:0;width:72px;background:linear-gradient(90deg,transparent,var(--f-acrylic-solid))}
+.ai{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:4px;background:var(--f-accent-soft);border:1px solid var(--f-card-stroke)}
+.ai>.spk{width:16px;height:16px;color:var(--f-accent-text);margin-top:2px}
+.ai p{margin:0;font-size:13px;line-height:20px;color:var(--f-text);flex:1;min-width:0}
+.ai p b{font-weight:600}
+
+/* Dialog */
+.smoke{position:absolute;inset:0;background:var(--f-smoke)}
+.dlg{position:absolute;left:50%;top:50%;width:600px;transform:translate(-50%,-50%);border-radius:8px;background:var(--f-dlg);border:1px solid var(--f-flyout-stroke);box-shadow:var(--shadow-dlg);overflow:hidden}
+.dlg-body{padding:24px;display:flex;flex-direction:column;gap:14px}
+.dlg-t{font-size:20px;line-height:28px;font-weight:600}
+.dlg-img{height:236px;border-radius:4px;overflow:hidden;border:1px solid var(--f-card-stroke)}
+.dlg-img svg{display:block;width:100%;height:100%}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--f-text-2)}
+.tagbox{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-radius:4px;background:var(--f-card-alt);border:1px solid var(--f-card-stroke)}
+.tagbox-h{display:flex;align-items:center;gap:8px;font-weight:600}
+.tagbox-h .spk{color:var(--f-accent-text)}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tags span{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:4px;background:var(--f-subtle);font-size:12px;color:var(--f-text)}
+.kv{display:grid;grid-template-columns:76px minmax(0,1fr);gap:6px 12px;font-size:13px;margin:0}
+.kv dt{color:var(--f-text-2)}
+.kv dd{margin:0}
+.kv .mono{font-family:var(--font-mono);font-size:12px}
+.dlg-foot{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:24px;background:var(--f-dlg-foot);border-top:1px solid var(--f-divider)}
+
+/* Window switch */
+.howto{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.how{display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:4px;background:var(--f-card-alt);border:1px solid var(--f-card-stroke);color:var(--f-text-2);font-size:13px}
+.keymap{display:flex;flex-direction:column;gap:12px}
+.krow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.krow.r1{margin-right:32px}
+.krow.r2{margin-left:32px}
+.kt{display:flex;flex-direction:column;justify-content:space-between;height:120px;padding:12px 12px 14px 14px;border-radius:8px;background:var(--f-card);border:1px solid var(--f-card-stroke);min-width:0}
+.kt-top{display:flex;align-items:center;gap:8px}
+.kt-key{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;background:var(--f-ctrl);border:1px solid var(--f-ctrl-stroke);border-bottom:2px solid var(--f-ctrl-edge);font-weight:600;font-size:14px}
+.kt.on .kt-key{background:var(--f-accent);color:var(--f-on-accent);border-color:transparent;border-bottom-color:rgba(0,0,0,.3)}
+.kt-top .btn{margin-left:auto;color:var(--f-text-3)}
+.kt-top .btn .g{font-size:10px}
+.kt-app{display:flex;align-items:center;gap:12px;min-width:0}
+.kt-app>div{min-width:0}
+.kt-t{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kt-s{font-size:12px;line-height:16px;color:var(--f-text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kt.empty{background:transparent;border:1px dashed var(--f-dash)}
+.kt.empty .kt-key{color:var(--f-text-2)}
+.kt-e{font-size:12px;line-height:16px;color:var(--f-text-3)}
+.kt-e b{display:block;font-size:13px;font-weight:400;color:var(--f-text-2);margin-bottom:2px}
+
+/* OSD */
+.pair{display:grid;grid-template-columns:600px 600px;gap:40px}
+.pair figure{margin:0;display:flex;flex-direction:column;gap:14px}
+.pair figcaption{font-size:14px;color:var(--ink-2);padding-left:4px}
+.osd{position:absolute;left:50%;bottom:72px;transform:translateX(-50%);display:flex;align-items:center;gap:14px;width:392px;padding:14px 18px 14px 14px;border-radius:8px;background:var(--f-acrylic);border:1px solid var(--f-flyout-stroke);box-shadow:var(--shadow-fly);backdrop-filter:blur(40px) saturate(1.2)}
+.osd>div{min-width:0}
+.osd-t{font-weight:600;display:flex;align-items:center;gap:3px;white-space:nowrap}
+.osd-t .kc:last-of-type{margin-right:3px}
+.osd-s{font-size:12px;line-height:16px;color:var(--f-text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.osd .ghost{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;border:1px dashed var(--f-dash);color:var(--f-text-2);flex:none}
+.osd .ghost .g{font-size:18px;width:18px;height:18px}
+.osd .kc{height:22px;min-width:22px;font-size:11px;padding:0 6px}
+
+/* Sound */
+.exp{border-radius:4px;overflow:hidden;border:1px solid var(--f-card-stroke)}
+.exp>.sc{border:0;border-radius:0}
+.exp-body{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:16px 16px 16px 52px;background:var(--f-card-alt);border-top:1px solid var(--f-divider)}
+.chan{display:flex;flex-direction:column;gap:8px;min-width:0}
+.chan-h{display:flex;align-items:center;gap:10px;font-size:13px}
+.chan-h .name{color:var(--f-text-2)}
+.chan-h .btn{margin-left:auto}
+.lr{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:4px;background:var(--f-accent-soft);color:var(--f-accent-text);font-weight:600;font-size:12px}
+table.ft{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:13px}
+.ft th{font-weight:400;font-size:12px;color:var(--f-text-3);text-align:right;padding:4px 8px;border-bottom:1px solid var(--f-divider)}
+.ft td{text-align:right;padding:7px 8px;border-bottom:1px solid var(--f-divider)}
+.ft th:first-child,.ft td:first-child{text-align:left;padding-left:0}
+.ft tr:last-child td{border-bottom:0}
+.exp-body.npu{grid-template-columns:120px minmax(0,1fr);gap:10px 16px;align-items:center;margin:0;font-size:13px}
+.exp-body.npu dt{color:var(--f-text-2)}
+.exp-body.npu dd{margin:0;display:flex;align-items:center;gap:12px;min-width:0;white-space:nowrap;font-variant-numeric:tabular-nums}
+.lvl{width:180px;height:4px;border-radius:2px;background:var(--f-subtle);overflow:hidden;flex:none}
+.lvl i{display:block;width:58%;height:100%;border-radius:2px;background:var(--f-ok)}
+
+/* Bridge */
+.hero{padding:20px;display:flex;flex-direction:column;gap:16px}
+.hero-top{display:flex;align-items:center;gap:14px}
+.hero-t{font-size:20px;line-height:28px;font-weight:600}
+.hero-s{font-size:12px;line-height:16px;color:var(--f-text-2)}
+.conn{display:grid;grid-template-columns:80px minmax(0,1fr) auto;align-items:center;gap:8px 12px;padding-top:16px;border-top:1px solid var(--f-divider)}
+.conn dt{font-size:13px;color:var(--f-text-2)}
+.conn dd{margin:0;display:flex;align-items:center;height:32px;padding:0 12px;border-radius:4px;background:var(--f-card-alt);border:1px solid var(--f-card-stroke);font-family:var(--font-mono);font-size:13px;white-space:nowrap;overflow:hidden}
+.conn .acts{display:flex;gap:4px}
+
+/* Diagnostics */
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dcard{padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.dcard-h{display:flex;align-items:center;gap:10px;font-weight:600}
+.dcard-h .g{color:var(--f-text-2)}
+.drow{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--f-text-2);white-space:nowrap}
+.drow b{font-weight:400;color:var(--f-text);min-width:112px}
+.log{padding:4px 0}
+.lrow{display:grid;grid-template-columns:76px 96px minmax(0,1fr);gap:12px;align-items:center;height:36px;padding:0 16px;border-bottom:1px solid var(--f-divider);font-size:13px;white-space:nowrap}
+.lrow:last-child{border-bottom:0}
+.lrow time{font-family:var(--font-mono);font-size:12px;color:var(--f-text-3)}
+.lrow span{color:var(--f-text-2)}
+.lrow p{margin:0;overflow:hidden;text-overflow:ellipsis}
+.clone-host{position:relative}
+@media (prefers-reduced-motion: reduce){.caret{animation:none}}
+</style>
+
+<div class="page">
+  <header class="intro">
+    <p class="eyebrow">Windows 11 디자인 시안 · 2026년 10월 20일</p>
+    <h1>Personal Tools for Windows</h1>
+    <p class="lede">Windows로 옮기기로 한 화면을 Windows 11 디자인 언어로 다시 그렸습니다. 창 배경은 Mica, 글꼴은 Segoe UI Variable, 아이콘은 Segoe Fluent Icons를 쓰고, 강조색은 이 PC의 시스템 강조색을 따릅니다. 화면 속 기록, 장치, 창 이름은 모두 예시입니다.</p>
+    <div class="facts">
+      <section class="fact">
+        <h2>포함</h2>
+        <div class="chips"><span class="chip">클립보드</span><span class="chip">창 빠른 전환 <em>신규</em></span><span class="chip">사운드</span><span class="chip">Antigravity 브릿지</span><span class="chip">진단</span></div>
+      </section>
+      <section class="fact">
+        <h2>제외</h2>
+        <div class="chips"><span class="chip off">HDR</span><span class="chip off">화면 꺼짐 방지</span><span class="chip off">vLLM</span><span class="chip off">마이크 음소거 단축키</span></div>
+      </section>
+      <section class="fact">
+        <h2>원칙</h2>
+        <ul>
+          <li>설정은 Windows 설정 앱처럼 카드 목록으로 정리</li>
+          <li>색은 강조색 하나와 상태색만 사용</li>
+          <li>글자 크기는 Windows 기본값 (본문 14, 제목 28)</li>
+        </ul>
+      </section>
+    </div>
+    <div class="controls">
+      <ol class="toc" aria-label="화면 목록">
+        <li><a href="#s01"><span>01</span>클립보드 보관함</a></li>
+        <li><a href="#s02"><span>02</span>빠른 패널</a></li>
+        <li><a href="#s03"><span>03</span>AI 검색</a></li>
+        <li><a href="#s04"><span>04</span>미리보기</a></li>
+        <li><a href="#s05"><span>05</span>클립보드 설정</a></li>
+        <li><a href="#s06"><span>06</span>창 빠른 전환</a></li>
+        <li><a href="#s07"><span>07</span>창 전환 알림</a></li>
+        <li><a href="#s08"><span>08</span>사운드</a></li>
+        <li><a href="#s09"><span>09</span>Antigravity 브릿지</a></li>
+        <li><a href="#s10"><span>10</span>진단</a></li>
+      </ol>
+      <div class="themes" role="group" aria-label="시안 테마">
+        <button type="button" id="theme-system" data-theme-choice="system" aria-pressed="true">시스템</button>
+        <button type="button" id="theme-light" data-theme-choice="light" aria-pressed="false">라이트</button>
+        <button type="button" id="theme-dark" data-theme-choice="dark" aria-pressed="false">다크</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 01 -->
+  <section class="shot" id="s01">
+    <div class="cap"><span class="no">01</span><div>
+      <h2>클립보드 보관함</h2>
+      <p>메인 창에서는 기록을 날짜별 격자로 보여 줍니다. 카드는 Windows 기본 카드 스타일을 쓰고, 형식은 머리글 아이콘 색으로만 구분합니다. 선택한 카드는 강조색 테두리로 표시합니다.</p>
+      <p class="delta"><b>변경</b>가로 한 줄 카드와 형식별 색 머리띠를 날짜별 격자로 바꿉니다. 아래쪽 상태 줄에 기록 상태와 단축키를 둡니다.</p>
+    </div></div>
+    <div class="stage"><div class="frame" data-w="1200" style="width:1200px" role="img" aria-label="클립보드 보관함 화면 시안">
+      <div class="win" data-clone-source style="height:760px">
+        <div class="tb"><span class="appico"></span><span>Personal Tools</span><span class="caps"><i class="g">&#xE921;</i><i class="g">&#xE922;</i><i class="g">&#xE8BB;</i></span></div>
+        <div class="wb">
+          <div class="nav">
+            <div class="ni sel"><i class="g">&#xE77F;</i>클립보드</div>
+            <div class="ni"><i class="g">&#xE7C4;</i>창 빠른 전환</div>
+            <div class="ni"><i class="g">&#xE767;</i>사운드</div>
+            <div class="ni"><i class="g">&#xE774;</i>Antigravity 브릿지</div>
+            <div class="nav-foot"><div class="ni"><i class="g">&#xE9D9;</i>진단</div><div class="ni"><i class="g">&#xE7E8;</i>앱 종료</div></div>
+          </div>
+          <div class="layer">
+            <div class="phead"><div class="t-title">클립보드</div><span class="grow"></span><span class="btn subtle"><i class="g">&#xE769;</i>기록 일시정지</span><span class="btn subtle"><i class="g">&#xE713;</i>설정</span></div>
+            <div class="row g12">
+              <div class="input search" style="width:360px"><span>기록 검색</span><span class="hint">Ctrl+F</span><i class="g">&#xE721;</i></div>
+              <div class="seg"><span class="sel">일반</span><span><svg class="spk" viewBox="0 0 16 16" aria-hidden="true"><path d="M7 1.5 8.4 5.6 12.5 7 8.4 8.4 7 12.5 5.6 8.4 1.5 7 5.6 5.6Z"/><path d="M12.6 10.4l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6Z"/></svg>AI 검색</span></div>
+              <span class="grow"></span>
+              <span class="btn"><i class="g">&#xE71C;</i>필터</span>
+            </div>
+            <div class="tabs"><span class="sel">전체</span><span>고정</span><span>작업</span><span>참고 자료</span><span class="tadd"><i class="g">&#xE710;</i></span></div>
+            <div class="scroll">
+              <div class="day">오늘</div>
+              <div class="cgrid">
+                <div class="clip sel">
+                  <div class="ch"><i class="g ty tx">&#xE8A5;</i>텍스트<i class="g pin end">&#xE718;</i></div>
+                  <p class="pv">다음 주 작업 정리<br>클립보드 검색 흐름 점검<br>오디오 설정 정리<br>창 빠른 전환 키 확인</p>
+                  <div class="cf"><span class="app" style="background:var(--app-blue)"><i class="g">&#xE70F;</i></span>메모장 · 10:24</div>
+                </div>
+                <div class="clip">
+                  <div class="ch"><i class="g ty im">&#xE91B;</i>이미지<svg class="spk end" viewBox="0 0 16 16" aria-label="태그 있음"><path d="M7 1.5 8.4 5.6 12.5 7 8.4 8.4 7 12.5 5.6 8.4 1.5 7 5.6 5.6Z"/><path d="M12.6 10.4l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6Z"/></svg></div>
+                  <div class="thumb"><svg viewBox="0 0 240 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="240" height="100" fill="#1E2125"/><rect width="240" height="14" fill="#2A2E33"/><circle cx="9" cy="7" r="2.2" fill="#555B62"/><circle cx="17" cy="7" r="2.2" fill="#555B62"/><g stroke="#373C42" stroke-width=".7"><path d="M14 30H230M14 48H230M14 66H230M14 84H230"/><path d="M58 22V92M102 22V92M146 22V92M190 22V92"/></g><path d="M14 44C38 44 44 76 56 76S72 50 90 55 112 48 140 48H230" fill="none" stroke="#4CC2FF" stroke-width="2"/><path d="M14 48C38 48 42 70 54 70S74 54 92 57 114 48 140 48H230" fill="none" stroke="#F2C04C" stroke-width="1.6"/></svg></div>
+                  <div class="cf"><span class="app" style="background:var(--app-violet)"><i class="g">&#xE722;</i></span>캡처 도구 · 10:12</div>
+                </div>
+                <div class="clip">
+                  <div class="ch"><i class="g ty ul">&#xE71B;</i>URL</div>
+                  <div class="lk"><b>Windows 앱 디자인</b><span>learn.microsoft.com/windows/apps/design</span></div>
+                  <div class="cf"><span class="app" style="background:var(--app-teal)"><i class="g">&#xE774;</i></span>Edge · 10:05</div>
+                </div>
+                <div class="clip">
+                  <div class="ch"><i class="g ty fl">&#xE8B7;</i>파일 2개</div>
+                  <div class="files"><div class="fr"><i class="g">&#xE8A5;</i>L.txt<span>412 B</span></div><div class="fr"><i class="g">&#xE8A5;</i>R.txt<span>409 B</span></div></div>
+                  <div class="cf"><span class="app" style="background:var(--app-amber)"><i class="g">&#xE8B7;</i></span>파일 탐색기 · 09:56</div>
+                </div>
+                <div class="clip">
+                  <div class="ch"><i class="g ty tx">&#xE943;</i>텍스트</div>
+                  <pre class="code">cmake --build build -j
+ctest --test-dir build</pre>
+                  <div class="cf"><span class="app" style="background:var(--app-slate)"><i class="g">&#xE756;</i></span>터미널 · 09:42</div>
+                </div>
+                <div class="clip">
+                  <div class="ch"><i class="g ty tx">&#xE8A5;</i>텍스트</div>
+                  <p class="pv">SMSL USB DAC → 스피커 EQ<br>MOTU 입력 1 → 반향 제거<br>처리 지연 21.33 ms</p>
+                  <div class="cf"><span class="app" style="background:var(--app-blue)"><i class="g">&#xE70F;</i></span>메모장 · 09:30</div>
+                </div>
+              </div>
+              <div class="day">어제</div>
+              <div class="cgrid">
+                <div class="clip">
+                  <div class="ch"><i class="g ty im">&#xE91B;</i>이미지</div>
+                  <div class="thumb"><svg viewBox="0 0 240 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F2B57C"/><stop offset=".55" stop-color="#C7A5C9"/><stop offset="1" stop-color="#7E9CCB"/></linearGradient></defs><rect width="240" height="100" fill="url(#sky)"/><path d="M0 66 40 36 62 52 96 20 128 50 150 38 196 62 240 48V100H0Z" fill="#46506B"/><path d="M0 76 30 60 70 72 110 56 150 70 200 58 240 68V100H0Z" fill="#2F3850"/><rect y="80" width="240" height="20" fill="#5D79A8"/></svg></div>
+                  <div class="cf"><span class="app" style="background:var(--app-blue)"><i class="g">&#xE91B;</i></span>사진 · 어제 18:20</div>
+                </div>
+                <div class="clip">
+                  <div class="ch"><i class="g ty ul">&#xE71B;</i>URL</div>
+                  <div class="lk"><b>Antigravity CLI 개요</b><span>antigravity.google/docs/cli/overview</span></div>
+                  <div class="cf"><span class="app" style="background:var(--app-teal)"><i class="g">&#xE774;</i></span>Edge · 어제 16:02</div>
+                </div>
+                <div class="clip">
+                  <div class="ch"><i class="g ty tx">&#xE8A5;</i>텍스트</div>
+                  <p class="pv">회의실 예약: 목요일 14:00<br>참석: 디자인, 오디오 담당</p>
+                  <div class="cf"><span class="app" style="background:var(--app-blue)"><i class="g">&#xE70F;</i></span>메모장 · 어제 11:47</div>
+                </div>
+              </div>
+            </div>
+            <div class="sline"><span class="dot ok"></span>기록 중 · 128개 · 412 MB<span class="grow"></span><span class="kc">Enter</span>복사<span class="kc">Delete</span>삭제<span class="kc">Ctrl</span><span class="plus">+</span><span class="kc">F</span>검색</div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 02 -->
+  <section class="shot" id="s02">
+    <div class="cap"><span class="no">02</span><div>
+      <h2>빠른 패널</h2>
+      <p>Ctrl+Shift+V를 누르면 마우스가 있는 모니터 아래쪽에 열립니다. 열자마자 가장 최근 카드에 포커스가 있어서 ←, → 와 Enter만으로 원래 앱에 붙여넣습니다. 바깥을 클릭하거나 Esc를 누르면 닫힙니다.</p>
+      <p class="delta"><b>변경</b>검색창 대신 첫 카드에 포커스를 줍니다 (Ubuntu에서 다듬은 동작). 도구 버튼은 아이콘만 남기고 메인 창 열기를 추가합니다.</p>
+    </div></div>
+    <div class="stage"><div class="frame" data-w="1360" style="width:1360px" role="img" aria-label="빠른 패널 화면 시안">
+      <div class="desk" style="width:1280px;height:800px">
+        <div class="npw">
+          <div class="np-tabs"><div class="np-tab"><i class="g">&#xE70F;</i>작업 메모<i class="g">&#xE711;</i></div><span class="btn subtle sm ib"><i class="g" style="font-size:11px">&#xE710;</i></span><span class="caps"><i class="g">&#xE921;</i><i class="g">&#xE922;</i><i class="g">&#xE8BB;</i></span></div>
+          <div class="np-menu"><span>파일</span><span>편집</span><span>보기</span></div>
+          <div class="np-text"><p>1. 다음 주 회의 자료 준비</p><p>2. 오디오 설정 정리</p><p>3. 디자인 시안 검토 후 피드백 정리</p><p><span class="caret" style="margin-left:0"></span></p></div>
+        </div>
+        <div class="qp">
+          <div class="qp-top">
+            <span class="qp-title"><i class="g">&#xE77F;</i>클립보드</span>
+            <div class="input search" style="width:360px"><span>기록 검색</span><span class="hint">Ctrl+F</span><i class="g">&#xE721;</i></div>
+            <div class="seg"><span class="sel">일반</span><span><svg class="spk" viewBox="0 0 16 16" aria-hidden="true"><path d="M7 1.5 8.4 5.6 12.5 7 8.4 8.4 7 12.5 5.6 8.4 1.5 7 5.6 5.6Z"/><path d="M12.6 10.4l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6Z"/></svg>AI 검색</span></div>
+            <span class="grow"></span>
+            <span class="btn subtle ib"><i class="g">&#xE71C;</i></span><span class="btn subtle ib"><i class="g">&#xE769;</i></span><span class="btn subtle ib"><i class="g">&#xE713;</i></span><span class="btn subtle ib"><i class="g">&#xE8A7;</i></span>
+          </div>
+          <div class="tabs"><span class="sel">전체</span><span>고정</span><span>작업</span><span>참고 자료</span><span class="tadd"><i class="g">&#xE710;</i></span></div>
+          <div class="strip">
+            <div class="clip sel focus">
+              <div class="ch"><i class="g ty tx">&#xE8A5;</i>텍스트<i class="g pin end">&#xE718;</i></div>
+              <p class="pv" style="-webkit-line-clamp:6">다음 주 작업 정리<br>클립보드 검색 흐름 점검<br>오디오 설정 정리<br>창 빠른 전환 키 확인</p>
+              <div class="cf"><span class="app" style="background:var(--app-blue)"><i class="g">&#xE70F;</i></span>메모장 · 10:24</div>
+            </div>
+            <div class="clip">
+              <div class="ch"><i class="g ty im">&#xE91B;</i>이미지</div>
+              <div class="thumb"><svg viewBox="0 0 240 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="240" height="120" fill="#1E2125"/><rect width="240" height="14" fill="#2A2E33"/><circle cx="9" cy="7" r="2.2" fill="#555B62"/><circle cx="17" cy="7" r="2.2" fill="#555B62"/><g stroke="#373C42" stroke-width=".7"><path d="M14 34H230M14 56H230M14 78H230M14 100H230"/><path d="M58 24V110M102 24V110M146 24V110M190 24V110"/></g><path d="M14 52C38 52 44 90 56 90S72 60 90 65 112 56 140 56H230" fill="none" stroke="#4CC2FF" stroke-width="2"/><path d="M14 56C38 56 42 82 54 82S74 63 92 66 114 56 140 56H230" fill="none" stroke="#F2C04C" stroke-width="1.6"/></svg></div>
+              <div class="cf"><span class="app" style="background:var(--app-violet)"><i class="g">&#xE722;</i></span>캡처 도구 · 10:12</div>
+            </div>
+            <div class="clip">
+              <div class="ch"><i class="g ty ul">&#xE71B;</i>URL</div>
+              <div class="lk"><b>Windows 앱 디자인</b><span>learn.microsoft.com/windows/apps/design</span></div>
+              <div class="cf"><span class="app" style="background:var(--app-teal)"><i class="g">&#xE774;</i></span>Edge · 10:05</div>
+            </div>
+            <div class="clip">
+              <div class="ch"><i class="g ty fl">&#xE8B7;</i>파일 2개</div>
+              <div class="files"><div class="fr"><i class="g">&#xE8A5;</i>L.txt<span>412 B</span></div><div class="fr"><i class="g">&#xE8A5;</i>R.txt<span>409 B</span></div></div>
+              <div class="cf"><span class="app" style="background:var(--app-amber)"><i class="g">&#xE8B7;</i></span>파일 탐색기 · 09:56</div>
+            </div>
+            <div class="clip">
+              <div class="ch"><i class="g ty tx">&#xE943;</i>텍스트</div>
+              <pre class="code">cmake --build build -j
+ctest --test-dir build</pre>
+              <div class="cf"><span class="app" style="background:var(--app-slate)"><i class="g">&#xE756;</i></span>터미널 · 09:42</div>
+            </div>
+          </div>
+        </div>
+        <div class="taskbar">
+          <span class="tbi"><svg class="logo" viewBox="0 0 16 16" aria-hidden="true"><rect x="1" y="1" width="6.6" height="6.6" rx=".8"/><rect x="8.4" y="1" width="6.6" height="6.6" rx=".8"/><rect x="1" y="8.4" width="6.6" height="6.6" rx=".8"/><rect x="8.4" y="8.4" width="6.6" height="6.6" rx=".8"/></svg></span>
+          <span class="tbi"><i class="g">&#xE721;</i></span>
+          <span class="tbi run"><span class="app md" style="background:var(--app-amber)"><i class="g">&#xE8B7;</i></span></span>
+          <span class="tbi run"><span class="app md" style="background:var(--app-teal)"><i class="g">&#xE774;</i></span></span>
+          <span class="tbi run"><span class="app md" style="background:var(--app-slate)"><i class="g">&#xE756;</i></span></span>
+          <span class="tbi run active"><span class="app md" style="background:var(--app-blue)"><i class="g">&#xE70F;</i></span></span>
+          <div class="tray"><i class="g" style="font-size:12px">&#xE70E;</i><span class="appico"></span><i class="g">&#xE701;</i><i class="g">&#xE767;</i><span class="clock">오전 10:24<br>2026-10-20</span></div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 03 -->
+  <section class="shot" id="s03">
+    <div class="cap"><span class="no">03</span><div>
+      <h2>AI 검색</h2>
+      <p>Shift+Enter를 누르거나 AI 검색으로 바꾸면 선택한 탭 범위 안에서 Antigravity가 파일 내용까지 읽어 찾습니다. 위에는 요약을, 아래에는 근거가 있는 카드만 남기고, 카드마다 근거 종류를 배지로 표시합니다.</p>
+      <p class="delta"><b>변경</b>근거 배지(내용 확인, 파일 이름 일치, 이미지 태그 일치)를 추가합니다. AI 검색이 꺼져 있으면 이 모드는 비활성으로 표시됩니다.</p>
+    </div></div>
+    <div class="stage"><div class="frame" data-w="1260" style="width:1260px" role="img" aria-label="AI 검색 결과 화면 시안">
+      <div class="qp" style="width:1180px;height:428px">
+        <div class="qp-top">
+          <span class="qp-title"><i class="g">&#xE77F;</i>클립보드</span>
+          <div class="input search focus" style="width:360px"><span class="val">지난주 복사한 EQ 필터 값</span><i class="g">&#xE721;</i></div>
+          <div class="seg"><span>일반</span><span class="sel"><svg class="spk" viewBox="0 0 16 16" aria-hidden="true"><path d="M7 1.5 8.4 5.6 12.5 7 8.4 8.4 7 12.5 5.6 8.4 1.5 7 5.6 5.6Z"/><path d="M12.6 10.4l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6Z"/></svg>AI 검색</span></div>
+          <span class="grow"></span>
+          <span class="btn subtle ib"><i class="g">&#xE769;</i></span><span class="btn subtle ib"><i class="g">&#xE713;</i></span><span class="btn subtle ib"><i class="g">&#xE8A7;</i></span>
+        </div>
+        <div class="tabs"><span class="sel">전체</span><span>고정</span><span>작업</span><span>참고 자료</span><span class="tadd"><i class="g">&#xE710;</i></span></div>
+        <div class="ai">
+          <svg class="spk" viewBox="0 0 16 16" aria-hidden="true"><path d="M7 1.5 8.4 5.6 12.5 7 8.4 8.4 7 12.5 5.6 8.4 1.5 7 5.6 5.6Z"/><path d="M12.6 10.4l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6Z"/></svg>
+          <p><b>3개 기록을 찾았습니다.</b> L.txt와 R.txt 본문에서 왼쪽 66 Hz −12.0 dB (Q 7.40), 오른쪽 65 Hz −8.4 dB (Q 8.00) 필터를 확인했습니다. EQ 그래프 스크린샷은 이미지 태그로 찾았습니다.</p>
+          <span class="btn subtle sm">일반 검색으로</span>
+        </div>
+        <div class="strip">
+          <div class="clip sel">
+            <div class="ch"><i class="g ty fl">&#xE8B7;</i>파일 2개<span class="badge ok end"><i class="g">&#xE73E;</i>내용 확인</span></div>
+            <div class="files"><div class="fr"><i class="g">&#xE8A5;</i>L.txt<span>412 B</span></div><div class="fr"><i class="g">&#xE8A5;</i>R.txt<span>409 B</span></div></div>
+            <div class="cf"><span class="app" style="background:var(--app-amber)"><i class="g">&#xE8B7;</i></span>파일 탐색기 · 10월 14일</div>
+          </div>
+          <div class="clip">
+            <div class="ch"><i class="g ty tx">&#xE8A5;</i>텍스트<span class="badge ok end"><i class="g">&#xE73E;</i>내용 확인</span></div>
+            <p class="pv">EQ 설정 메모<br>L: 66 Hz −12 dB Q 7.40<br>R: 65 Hz −8.4 dB Q 8.00</p>
+            <div class="cf"><span class="app" style="background:var(--app-blue)"><i class="g">&#xE70F;</i></span>메모장 · 10월 15일</div>
+          </div>
+          <div class="clip">
+            <div class="ch"><i class="g ty im">&#xE91B;</i>이미지<span class="badge end">이미지 태그 일치</span></div>
+            <div class="thumb"><svg viewBox="0 0 240 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="240" height="120" fill="#1E2125"/><rect width="240" height="14" fill="#2A2E33"/><circle cx="9" cy="7" r="2.2" fill="#555B62"/><circle cx="17" cy="7" r="2.2" fill="#555B62"/><g stroke="#373C42" stroke-width=".7"><path d="M14 34H230M14 56H230M14 78H230M14 100H230"/><path d="M58 24V110M102 24V110M146 24V110M190 24V110"/></g><path d="M14 52C38 52 44 90 56 90S72 60 90 65 112 56 140 56H230" fill="none" stroke="#4CC2FF" stroke-width="2"/><path d="M14 56C38 56 42 82 54 82S74 63 92 66 114 56 140 56H230" fill="none" stroke="#F2C04C" stroke-width="1.6"/></svg></div>
+            <div class="cf"><span class="app" style="background:var(--app-violet)"><i class="g">&#xE722;</i></span>캡처 도구 · 10월 16일</div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 04 -->
+  <section class="shot" id="s04">
+    <div class="cap"><span class="no">04</span><div>
+      <h2>미리보기와 이미지 태그</h2>
+      <p>카드를 열면 원본을 크게 보여 줍니다. 이미지에는 Antigravity가 만든 태그, 설명, 인식한 글자가 함께 나오고, 이 값으로 일반 검색에서도 찾을 수 있습니다.</p>
+      <p class="delta"><b>신규</b>이미지 태그 표시와 다시 생성. 메인 창에서는 기본 버튼이 '복사'이고, 빠른 패널에서는 '붙여넣기'입니다.</p>
+    </div></div>
+    <div class="stage"><div class="frame" data-w="1200" style="width:1200px" role="img" aria-label="미리보기 대화상자 화면 시안">
+      <div class="clone-host" data-clone-target>
+        <div class="smoke" style="border-radius:8px"></div>
+        <div class="dlg">
+          <div class="dlg-body">
+            <div class="dlg-t">미리보기</div>
+            <div class="dlg-img"><svg viewBox="0 0 552 236" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="552" height="236" fill="#1E2125"/><rect width="552" height="22" fill="#2A2E33"/><circle cx="14" cy="11" r="3" fill="#555B62"/><circle cx="26" cy="11" r="3" fill="#555B62"/><g stroke="#373C42" stroke-width="1"><path d="M40 64H530M40 106H530M40 148H530M40 190H530"/><path d="M138 44V212M236 44V212M334 44V212M432 44V212"/></g><g fill="#7D848C" font-family="Segoe UI, sans-serif" font-size="11"><text x="12" y="68">+6</text><text x="12" y="110">0</text><text x="12" y="152">−6</text><text x="12" y="194">−12</text><text x="128" y="228">50</text><text x="224" y="228">100</text><text x="322" y="228">200</text><text x="420" y="228">500</text></g><path d="M40 102C96 102 110 190 138 190S172 120 214 132 266 106 334 106H530" fill="none" stroke="#4CC2FF" stroke-width="2.5"/><path d="M40 106C96 106 106 172 134 172S180 128 222 134 270 106 334 106H530" fill="none" stroke="#F2C04C" stroke-width="2"/><g font-family="Segoe UI, sans-serif" font-size="12"><rect x="392" y="34" width="10" height="10" rx="2" fill="#4CC2FF"/><text x="408" y="43" fill="#C8CDD3">L · 66 Hz −12 dB</text><rect x="392" y="52" width="10" height="10" rx="2" fill="#F2C04C"/><text x="408" y="61" fill="#C8CDD3">R · 65 Hz −8.4 dB</text></g></svg></div>
+            <div class="meta"><span>캡처 도구</span><span>오늘 10:12</span><span>PNG · 1920 × 1080 · 412 KB</span></div>
+            <div class="tagbox">
+              <div class="tagbox-h"><svg class="spk" viewBox="0 0 16 16" aria-hidden="true"><path d="M7 1.5 8.4 5.6 12.5 7 8.4 8.4 7 12.5 5.6 8.4 1.5 7 5.6 5.6Z"/><path d="M12.6 10.4l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6Z"/></svg>이미지 태그<span class="grow"></span><span class="btn subtle sm"><i class="g" style="font-size:13px">&#xE72C;</i>다시 생성</span></div>
+              <div class="tags"><span>EQ</span><span>주파수 응답</span><span>그래프</span><span>저역 필터</span><span>스크린샷</span><span>frequency response</span></div>
+              <dl class="kv"><dt>설명</dt><dd>좌우 채널의 저역 감쇠 필터를 겹쳐 보여 주는 주파수 응답 그래프 화면입니다.</dd><dt>인식한 글자</dt><dd class="mono">L · 66 Hz −12 dB / R · 65 Hz −8.4 dB</dd></dl>
+            </div>
+          </div>
+          <div class="dlg-foot"><span class="btn accent">복사</span><span class="btn">고정</span><span class="btn">닫기</span></div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 05 -->
+  <section class="shot" id="s05">
+    <div class="cap"><span class="no">05</span><div>
+      <h2>클립보드 설정</h2>
+      <p>좁은 대화상자 대신 Windows 설정 앱과 같은 카드 목록 페이지로 바꿉니다. 클립보드 화면의 설정 버튼으로 들어오고, 위쪽 경로로 돌아갑니다. AI 검색과 이미지 자동 태깅은 기본으로 꺼져 있고 여기서 켭니다.</p>
+      <p class="delta"><b>변경</b>설정 대화상자를 페이지로 바꾸고 AI 검색, 이미지 자동 태깅 스위치를 추가합니다. 단축키는 직접 입력 대신 '변경'을 눌러 키를 누르는 방식입니다.</p>
+    </div></div>
+    <div class="stage"><div class="frame" data-w="1200" style="width:1200px" role="img" aria-label="클립보드 설정 화면 시안">
+      <div class="win" style="height:880px">
+        <div class="tb"><span class="appico"></span><span>Personal Tools</span><span class="caps"><i class="g">&#xE921;</i><i class="g">&#xE922;</i><i class="g">&#xE8BB;</i></span></div>
+        <div class="wb">
+          <div class="nav">
+            <div class="ni sel"><i class="g">&#xE77F;</i>클립보드</div>
+            <div class="ni"><i class="g">&#xE7C4;</i>창 빠른 전환</div>
+            <div class="ni"><i class="g">&#xE767;</i>사운드</div>
+            <div class="ni"><i class="g">&#xE774;</i>Antigravity 브릿지</div>
+            <div class="nav-foot"><div class="ni"><i class="g">&#xE9D9;</i>진단</div><div class="ni"><i class="g">&#xE7E8;</i>앱 종료</div></div>
+          </div>
+          <div class="layer">
+            <div class="phead crumb t-title"><span class="up">클립보드</span><i class="g">&#xE76C;</i><span>설정</span></div>
+            <div class="grp">
+              <div class="grp-h">기록</div>
+              <div class="sc"><i class="g">&#xE81C;</i><div class="sct"><span>클립보드 기록 저장</span><span class="d">복사한 텍스트, 이미지, 파일을 자동으로 보관합니다.</span></div><div class="scc"><span class="tg">켬<span class="sw on"></span></span></div></div>
+              <div class="sc"><i class="g">&#xE765;</i><div class="sct"><span>빠른 패널 단축키</span><span class="d">어느 앱에서든 클립보드 패널을 엽니다.</span></div><div class="scc"><span class="keys"><span class="kc">Ctrl</span><span class="plus">+</span><span class="kc">Shift</span><span class="plus">+</span><span class="kc">V</span></span><span class="btn">변경</span></div></div>
+              <div class="sc"><i class="g">&#xE72E;</i><div class="sct"><span>기록하지 않을 앱</span><span class="d">비밀번호 관리자처럼 내용을 보관하면 안 되는 앱입니다.</span></div><div class="scc"><span>KeePassXC.exe 외 1개</span><i class="g chev">&#xE76C;</i></div></div>
+            </div>
+            <div class="grp">
+              <div class="grp-h">저장 공간</div>
+              <div class="sc"><i class="g">&#xE8B7;</i><div class="sct"><span>저장 폴더</span><span class="d mono">C:\Users\youns\AppData\Local\PersonalTools\Clipboard\Archive</span></div><div class="scc"><span class="btn">폴더 변경</span></div></div>
+              <div class="sc"><i class="g">&#xE8F1;</i><div class="sct"><span>보관 용량</span><span class="d">412 MB 사용 중 · 가득 차면 새 기록을 저장하지 않습니다.</span><div class="meter"><i></i></div></div><div class="scc"><span class="btn combo" style="width:120px">10 GB<i class="g">&#xE70D;</i></span></div></div>
+              <div class="sc"><i class="g">&#xE8A5;</i><div class="sct"><span>항목당 최대 크기</span><span class="d">이보다 큰 항목은 보관하지 않습니다.</span></div><div class="scc"><span class="btn combo" style="width:120px">100 MB<i class="g">&#xE70D;</i></span></div></div>
+            </div>
+            <div class="grp">
+              <div class="grp-h">AI 기능</div>
+              <div class="sc"><svg class="spk" viewBox="0 0 16 16" aria-hidden="true"><path d="M7 1.5 8.4 5.6 12.5 7 8.4 8.4 7 12.5 5.6 8.4 1.5 7 5.6 5.6Z"/><path d="M12.6 10.4l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6Z"/></svg><div class="sct"><span>AI 검색</span><span class="d">검색어와 선택한 탭의 기록을 Antigravity로 보내 파일 내용까지 찾습니다.</span></div><div class="scc"><span class="tg">켬<span class="sw on"></span></span></div></div>
+              <div class="sc"><i class="g">&#xE91B;</i><div class="sct"><span>이미지 자동 태깅</span><span class="d">새 이미지를 분석해 일반 검색과 AI 검색에 쓸 태그를 저장합니다.</span></div><div class="scc"><span class="tg">켬<span class="sw on"></span></span></div></div>
+            </div>
+            <p class="fnote">AI 기능은 Antigravity 브릿지에서 로그인한 계정의 사용량을 씁니다. <a>연결 설정 열기</a></p>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 06 -->
+  <section class="shot" id="s06">
+    <div class="cap"><span class="no">06</span><div>
+      <h2>창 빠른 전환</h2>
+      <p>8개 키를 실제 키보드 배열대로 보여 줍니다. 등록된 키는 강조색 키캡, 빈 키는 점선 칸입니다. 보고 있는 창에서 Win+Shift+키를 눌러 등록하고, Win+키로 그 창에 돌아갑니다.</p>
+      <p class="delta"><b>신규</b>Ubuntu의 창 빠른 전환을 옮깁니다. 켜 두면 같은 조합의 Windows 기본 단축키보다 먼저 동작하므로 끄는 스위치를 맨 위에 둡니다.</p>
+    </div></div>
+    <div class="stage"><div class="frame" data-w="1200" style="width:1200px" role="img" aria-label="창 빠른 전환 화면 시안">
+      <div class="win" style="height:760px">
+        <div class="tb"><span class="appico"></span><span>Personal Tools</span><span class="caps"><i class="g">&#xE921;</i><i class="g">&#xE922;</i><i class="g">&#xE8BB;</i></span></div>
+        <div class="wb">
+          <div class="nav">
+            <div class="ni"><i class="g">&#xE77F;</i>클립보드</div>
+            <div class="ni sel"><i class="g">&#xE7C4;</i>창 빠른 전환</div>
+            <div class="ni"><i class="g">&#xE767;</i>사운드</div>
+            <div class="ni"><i class="g">&#xE774;</i>Antigravity 브릿지</div>
+            <div class="nav-foot"><div class="ni"><i class="g">&#xE9D9;</i>진단</div><div class="ni"><i class="g">&#xE7E8;</i>앱 종료</div></div>
+          </div>
+          <div class="layer">
+            <div class="phead"><div class="t-title">창 빠른 전환</div><span class="grow"></span><span class="pill"><span class="dot ok"></span>5 / 8 등록</span></div>
+            <p class="lead">자주 쓰는 창을 키에 등록해 두고 단축키 한 번으로 돌아갑니다.</p>
+            <div class="sc"><i class="g">&#xE7C4;</i><div class="sct"><span>창 빠른 전환 사용</span><span class="d">켜 두면 Win+1~4는 작업 표시줄 앱 대신, Win+Q·W·E·R은 검색·위젯·파일 탐색기·실행 대신 이 기능으로 동작합니다.</span></div><div class="scc"><span class="tg">켬<span class="sw on"></span></span></div></div>
+            <div class="howto">
+              <div class="how"><span class="keys"><span class="kc">Win</span><span class="plus">+</span><span class="kc">Shift</span><span class="plus">+</span><span class="kc">키</span></span>지금 보고 있는 창을 등록</div>
+              <div class="how"><span class="keys"><span class="kc">Win</span><span class="plus">+</span><span class="kc">키</span></span>등록한 창으로 전환</div>
+            </div>
+            <div class="keymap">
+              <div class="krow r1">
+                <div class="kt on"><div class="kt-top"><span class="kt-key">1</span><span class="btn subtle sm ib"><i class="g">&#xE711;</i></span></div><div class="kt-app"><span class="app big" style="background:var(--app-blue)"><i class="g">&#xE943;</i></span><div><div class="kt-t">personal-tools — Visual Studio Code</div><div class="kt-s">Visual Studio Code</div></div></div></div>
+                <div class="kt on"><div class="kt-top"><span class="kt-key">2</span><span class="btn subtle sm ib"><i class="g">&#xE711;</i></span></div><div class="kt-app"><span class="app big" style="background:var(--app-slate)"><i class="g">&#xE756;</i></span><div><div class="kt-t">PowerShell</div><div class="kt-s">Windows 터미널</div></div></div></div>
+                <div class="kt on"><div class="kt-top"><span class="kt-key">3</span><span class="btn subtle sm ib"><i class="g">&#xE711;</i></span></div><div class="kt-app"><span class="app big" style="background:var(--app-teal)"><i class="g">&#xE774;</i></span><div><div class="kt-t">WinUI 3 문서</div><div class="kt-s">Microsoft Edge</div></div></div></div>
+                <div class="kt empty"><div class="kt-top"><span class="kt-key">4</span></div><div class="kt-e"><b>비어 있음</b>Win+Shift+4로 등록</div></div>
+              </div>
+              <div class="krow r2">
+                <div class="kt on"><div class="kt-top"><span class="kt-key">Q</span><span class="btn subtle sm ib"><i class="g">&#xE711;</i></span></div><div class="kt-app"><span class="app big" style="background:var(--app-indigo)"><i class="g">&#xE8BD;</i></span><div><div class="kt-t">#일반</div><div class="kt-s">Discord</div></div></div></div>
+                <div class="kt empty"><div class="kt-top"><span class="kt-key">W</span></div><div class="kt-e"><b>비어 있음</b>Win+Shift+W로 등록</div></div>
+                <div class="kt on"><div class="kt-top"><span class="kt-key">E</span><span class="btn subtle sm ib"><i class="g">&#xE711;</i></span></div><div class="kt-app"><span class="app big" style="background:var(--app-amber)"><i class="g">&#xE8B7;</i></span><div><div class="kt-t">다운로드</div><div class="kt-s">파일 탐색기</div></div></div></div>
+                <div class="kt empty"><div class="kt-top"><span class="kt-key">R</span></div><div class="kt-e"><b>비어 있음</b>Win+Shift+R로 등록</div></div>
+              </div>
+            </div>
+            <p class="fnote">창을 닫으면 그 키는 비워집니다. 같은 키에 다시 등록하면 새 창으로 바뀝니다. 등록은 Personal Tools를 종료하거나 로그아웃할 때까지 유지됩니다.</p>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 07 -->
+  <section class="shot" id="s07">
+    <div class="cap"><span class="no">07</span><div>
+      <h2>창 전환 알림</h2>
+      <p>창을 등록하거나 빈 키를 눌렀을 때 화면 아래 가운데에 1.5초 동안 나타납니다. 볼륨 알림과 같은 위치와 재질을 써서 작업을 가리지 않고, 포커스도 가져가지 않습니다.</p>
+      <p class="delta"><b>신규</b>Windows 알림 센터에는 남기지 않습니다. 등록한 창으로 전환할 때는 알림 없이 바로 전환합니다.</p>
+    </div></div>
+    <div class="stage"><div class="frame" data-w="1320" style="width:1320px" role="img" aria-label="창 전환 알림 화면 시안">
+      <div class="pair">
+        <figure>
+          <div class="desk" style="width:600px;height:300px">
+            <div class="osd"><span class="app big" style="background:var(--app-blue)"><i class="g">&#xE943;</i></span><div><div class="osd-t"><span class="kc on">Win</span><span class="plus">+</span><span class="kc on">1</span>에 등록했습니다</div><div class="osd-s">personal-tools — Visual Studio Code</div></div></div>
+            <div class="taskbar"><span class="tbi"><svg class="logo" viewBox="0 0 16 16" aria-hidden="true"><rect x="1" y="1" width="6.6" height="6.6" rx=".8"/><rect x="8.4" y="1" width="6.6" height="6.6" rx=".8"/><rect x="1" y="8.4" width="6.6" height="6.6" rx=".8"/><rect x="8.4" y="8.4" width="6.6" height="6.6" rx=".8"/></svg></span><span class="tbi run active"><span class="app md" style="background:var(--app-blue)"><i class="g">&#xE943;</i></span></span><span class="tbi run"><span class="app md" style="background:var(--app-slate)"><i class="g">&#xE756;</i></span></span><span class="tbi run"><span class="app md" style="background:var(--app-teal)"><i class="g">&#xE774;</i></span></span></div>
+          </div>
+          <figcaption>Win+Shift+1로 창을 등록했을 때</figcaption>
+        </figure>
+        <figure>
+          <div class="desk" style="width:600px;height:300px">
+            <div class="osd"><span class="ghost"><i class="g">&#xE7C4;</i></span><div><div class="osd-t"><span class="kc">Win</span><span class="plus">+</span><span class="kc">W</span>는 비어 있습니다</div><div class="osd-s">등록할 창에서 Win+Shift+W를 누르세요.</div></div></div>
+            <div class="taskbar"><span class="tbi"><svg class="logo" viewBox="0 0 16 16" aria-hidden="true"><rect x="1" y="1" width="6.6" height="6.6" rx=".8"/><rect x="8.4" y="1" width="6.6" height="6.6" rx=".8"/><rect x="1" y="8.4" width="6.6" height="6.6" rx=".8"/><rect x="8.4" y="8.4" width="6.6" height="6.6" rx=".8"/></svg></span><span class="tbi run active"><span class="app md" style="background:var(--app-blue)"><i class="g">&#xE943;</i></span></span><span class="tbi run"><span class="app md" style="background:var(--app-slate)"><i class="g">&#xE756;</i></span></span><span class="tbi run"><span class="app md" style="background:var(--app-teal)"><i class="g">&#xE774;</i></span></span></div>
+          </div>
+          <figcaption>등록하지 않은 키를 눌렀을 때</figcaption>
+        </figure>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 08 -->
+  <section class="shot" id="s08">
+    <div class="cap"><span class="no">08</span><div>
+      <h2>사운드</h2>
+      <p>스피커와 마이크를 Windows 설정 카드로 정리합니다. EQ 필터는 가져온 REW 파일 값을 읽기 전용 표로 보여 줍니다. 반향 제거는 NPU(Intel AI Boost)에서 DTLN-AEC 모델로 처리하고, 처리 장치, 스피커 참조, 입력 레벨을 그 아래에 바로 보여 줍니다.</p>
+      <p class="delta"><b>변경</b>NPU가 준비되지 않았거나 오류가 나면 '처리 중'으로 표시하지 않고 원인과 복구 상태를 표시합니다. 설치 전에는 맨 위에 '설치 및 적용' 안내가 나오고 스위치와 가져오기 버튼이 잠깁니다.</p>
+    </div></div>
+    <div class="stage"><div class="frame" data-w="1200" style="width:1200px" role="img" aria-label="사운드 화면 시안">
+      <div class="win" style="height:880px">
+        <div class="tb"><span class="appico"></span><span>Personal Tools</span><span class="caps"><i class="g">&#xE921;</i><i class="g">&#xE922;</i><i class="g">&#xE8BB;</i></span></div>
+        <div class="wb">
+          <div class="nav">
+            <div class="ni"><i class="g">&#xE77F;</i>클립보드</div>
+            <div class="ni"><i class="g">&#xE7C4;</i>창 빠른 전환</div>
+            <div class="ni sel"><i class="g">&#xE767;</i>사운드</div>
+            <div class="ni"><i class="g">&#xE774;</i>Antigravity 브릿지</div>
+            <div class="nav-foot"><div class="ni"><i class="g">&#xE9D9;</i>진단</div><div class="ni"><i class="g">&#xE7E8;</i>앱 종료</div></div>
+          </div>
+          <div class="layer">
+            <div class="phead"><div class="t-title">사운드</div><span class="grow"></span><span class="pill"><span class="dot ok"></span>EQ 처리 중</span><span class="pill"><span class="dot ok"></span>반향 제거 처리 중</span></div>
+            <div class="grp">
+              <div class="grp-h">스피커</div>
+              <div class="sc"><i class="g">&#xE767;</i><div class="sct"><span>출력 장치</span><span class="d">Windows 기본 재생 장치와 통화 앱도 같은 장치로 맞춰 주세요.</span></div><div class="scc"><span class="btn combo" style="width:280px">스피커 (SMSL USB AUDIO)<i class="g">&#xE70D;</i></span></div></div>
+              <div class="exp">
+                <div class="sc"><i class="g">&#xE9E9;</i><div class="sct"><span>좌우 독립 EQ</span><span class="d">REW Configurable_PEQ 파일의 필터를 채널마다 따로 적용합니다.</span></div><div class="scc"><span class="tg">켬<span class="sw on"></span></span><i class="g chev">&#xE70E;</i></div></div>
+                <div class="exp-body">
+                  <div class="chan">
+                    <div class="chan-h"><span class="lr">L</span>왼쪽<span class="name">L.txt</span><span class="btn sm">가져오기</span></div>
+                    <table class="ft"><thead><tr><th>주파수</th><th>게인</th><th>Q</th></tr></thead><tbody><tr><td>66 Hz</td><td>−12.0 dB</td><td>7.40</td></tr><tr><td>140 Hz</td><td>−12.0 dB</td><td>3.21</td></tr></tbody></table>
+                  </div>
+                  <div class="chan">
+                    <div class="chan-h"><span class="lr">R</span>오른쪽<span class="name">R.txt</span><span class="btn sm">가져오기</span></div>
+                    <table class="ft"><thead><tr><th>주파수</th><th>게인</th><th>Q</th></tr></thead><tbody><tr><td>65 Hz</td><td>−8.4 dB</td><td>8.00</td></tr><tr><td>142 Hz</td><td>−12.0 dB</td><td>3.36</td></tr></tbody></table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="grp">
+              <div class="grp-h">마이크</div>
+              <div class="sc"><i class="g">&#xE720;</i><div class="sct"><span>입력 장치</span><span class="d">MOTU 입력 1을 사용합니다. Loopback 입력은 선택하지 마세요.</span></div><div class="scc"><span class="btn combo" style="width:280px">In 1-2 (MOTU M Series)<i class="g">&#xE70D;</i></span></div></div>
+              <div class="exp">
+                <div class="sc"><svg class="spk" viewBox="0 0 16 16" aria-hidden="true"><path d="M7 1.5 8.4 5.6 12.5 7 8.4 8.4 7 12.5 5.6 8.4 1.5 7 5.6 5.6Z"/><path d="M12.6 10.4l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6Z"/></svg><div class="sct"><span>스피커 반향 제거</span><span class="d">스피커 소리가 마이크로 되돌아오는 것을 NPU에서 실시간으로 지웁니다.</span></div><div class="scc"><span class="tg">켬<span class="sw on"></span></span><i class="g chev">&#xE70E;</i></div></div>
+                <dl class="exp-body npu">
+                  <dt>처리 장치</dt><dd>Intel AI Boost (NPU) · DTLN-AEC 256<span class="pill"><span class="dot ok"></span>처리 중</span></dd>
+                  <dt>스피커 참조</dt><dd>스피커 (SMSL USB AUDIO) · 신호 확인</dd>
+                  <dt>마이크 입력</dt><dd><span class="lvl"><i></i></span>−18 dBFS</dd>
+                  <dt>처리 지연</dt><dd>21.33 ms</dd>
+                </dl>
+              </div>
+            </div>
+            <p class="fnote">창을 닫아도 트레이에서 계속 실행되며 스피커 참조 신호를 전달합니다.</p>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 09 -->
+  <section class="shot" id="s09">
+    <div class="cap"><span class="no">09</span><div>
+      <h2>Antigravity 브릿지</h2>
+      <p>다른 앱에 입력할 주소와 키를 맨 위 상태 카드에 모았습니다. CLI 경로와 기본 모델은 그 아래, 포트와 제한 시간, 연결 테스트는 '고급'에 둡니다.</p>
+      <p class="delta"><b>변경</b>세 개의 긴 입력 카드를 상태 카드 하나와 설정 카드 목록으로 줄입니다. API 키는 가려 두고 보기와 복사 버튼만 둡니다.</p>
+    </div></div>
+    <div class="stage"><div class="frame" data-w="1200" style="width:1200px" role="img" aria-label="Antigravity 브릿지 화면 시안">
+      <div class="win" style="height:820px">
+        <div class="tb"><span class="appico"></span><span>Personal Tools</span><span class="caps"><i class="g">&#xE921;</i><i class="g">&#xE922;</i><i class="g">&#xE8BB;</i></span></div>
+        <div class="wb">
+          <div class="nav">
+            <div class="ni"><i class="g">&#xE77F;</i>클립보드</div>
+            <div class="ni"><i class="g">&#xE7C4;</i>창 빠른 전환</div>
+            <div class="ni"><i class="g">&#xE767;</i>사운드</div>
+            <div class="ni sel"><i class="g">&#xE774;</i>Antigravity 브릿지</div>
+            <div class="nav-foot"><div class="ni"><i class="g">&#xE9D9;</i>진단</div><div class="ni"><i class="g">&#xE7E8;</i>앱 종료</div></div>
+          </div>
+          <div class="layer">
+            <div class="phead"><div class="t-title">Antigravity 브릿지</div></div>
+            <p class="lead">OpenAI 호환 앱의 요청을 이 PC의 Antigravity CLI로 연결합니다.</p>
+            <div class="card hero">
+              <div class="hero-top"><span class="sev big"><i class="g">&#xE73E;</i></span><div><div class="hero-t">실행 중</div><div class="hero-s">이 PC 안에서만 접속할 수 있습니다 · 오늘 요청 14건</div></div><span class="grow"></span><span class="btn">중지</span></div>
+              <dl class="conn" style="margin:0">
+                <dt>Base URL</dt><dd>http://127.0.0.1:8877/v1</dd><div class="acts"><span class="btn ib"><i class="g">&#xE8C8;</i></span></div>
+                <dt>API 키</dt><dd>pt-••••••••••••••••••••3f9a</dd><div class="acts"><span class="btn ib"><i class="g">&#xE890;</i></span><span class="btn ib"><i class="g">&#xE8C8;</i></span></div>
+              </dl>
+            </div>
+            <div class="grp">
+              <div class="grp-h">CLI</div>
+              <div class="sc"><i class="g">&#xE756;</i><div class="sct"><span>Antigravity CLI</span><span class="d mono">C:\Users\youns\AppData\Local\agy\bin\agy.exe</span></div><div class="scc"><span class="pill"><span class="dot ok"></span>로그인됨</span><span class="btn">CLI 열기</span></div></div>
+              <div class="sc"><svg class="spk" viewBox="0 0 16 16" aria-hidden="true"><path d="M7 1.5 8.4 5.6 12.5 7 8.4 8.4 7 12.5 5.6 8.4 1.5 7 5.6 5.6Z"/><path d="M12.6 10.4l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6Z"/></svg><div class="sct"><span>기본 모델</span><span class="d">앱이 모델을 지정하지 않으면 이 모델을 씁니다.</span></div><div class="scc"><span class="btn combo" style="width:240px">antigravity (CLI 기본값)<i class="g">&#xE70D;</i></span></div></div>
+            </div>
+            <div class="grp">
+              <div class="grp-h">고급</div>
+              <div class="sc"><i class="g">&#xE839;</i><div class="sct"><span>포트</span><span class="d">바꾸면 브릿지를 다시 시작합니다.</span></div><div class="scc"><span class="input" style="width:120px"><span class="val">8877</span></span></div></div>
+              <div class="sc"><i class="g">&#xE916;</i><div class="sct"><span>요청 제한 시간</span><span class="d">응답이 이 시간 안에 오지 않으면 요청을 끊습니다.</span></div><div class="scc"><span class="btn combo" style="width:120px">120초<i class="g">&#xE70D;</i></span></div></div>
+              <div class="sc"><i class="g">&#xE724;</i><div class="sct"><span>연결 테스트</span><span class="d">짧은 메시지를 보내 응답이 오는지 확인합니다.</span></div><div class="scc"><span class="btn">테스트</span></div></div>
+            </div>
+            <p class="fnote">텍스트 대화와 스트리밍을 지원합니다. 이미지, 도구 호출, Responses API는 지원하지 않습니다.</p>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 10 -->
+  <section class="shot" id="s10">
+    <div class="cap"><span class="no">10</span><div>
+      <h2>진단</h2>
+      <p>'처리 상태'를 '진단'으로 바꾸고 오디오뿐 아니라 클립보드, 창 빠른 전환, 브릿지 상태를 한곳에서 확인합니다. 오디오 효과 설치와 복원, 최근 기록도 여기에 둡니다.</p>
+      <p class="delta"><b>변경</b>상태는 색 점과 문장으로 함께 표시합니다. 진단 기록은 버튼을 눌러 펼치는 대신 최근 다섯 줄을 바로 보여 줍니다.</p>
+    </div></div>
+    <div class="stage"><div class="frame" data-w="1200" style="width:1200px" role="img" aria-label="진단 화면 시안">
+      <div class="win" style="height:860px">
+        <div class="tb"><span class="appico"></span><span>Personal Tools</span><span class="caps"><i class="g">&#xE921;</i><i class="g">&#xE922;</i><i class="g">&#xE8BB;</i></span></div>
+        <div class="wb">
+          <div class="nav">
+            <div class="ni"><i class="g">&#xE77F;</i>클립보드</div>
+            <div class="ni"><i class="g">&#xE7C4;</i>창 빠른 전환</div>
+            <div class="ni"><i class="g">&#xE767;</i>사운드</div>
+            <div class="ni"><i class="g">&#xE774;</i>Antigravity 브릿지</div>
+            <div class="nav-foot"><div class="ni sel"><i class="g">&#xE9D9;</i>진단</div><div class="ni"><i class="g">&#xE7E8;</i>앱 종료</div></div>
+          </div>
+          <div class="layer">
+            <div class="phead"><div class="t-title">진단</div><span class="grow"></span><span class="btn subtle"><i class="g">&#xE72C;</i>새로 고침</span></div>
+            <div class="dgrid">
+              <div class="card dcard"><div class="dcard-h"><i class="g">&#xE767;</i>오디오 효과</div>
+                <div class="drow"><span class="dot ok"></span><b>스피커 EQ</b>처리 중 · 48,000 Hz</div>
+                <div class="drow"><span class="dot ok"></span><b>마이크 반향 제거</b>처리 중 · 48,000 Hz</div>
+                <div class="drow"><span class="dot ok"></span><b>NPU</b>Intel AI Boost · DTLN-AEC 실행 중 · 오류 0</div>
+                <div class="drow"><span class="dot ok"></span><b>스피커 참조</b>신호 확인</div>
+              </div>
+              <div class="card dcard"><div class="dcard-h"><i class="g">&#xE77F;</i>클립보드</div>
+                <div class="drow"><span class="dot ok"></span><b>기록</b>기록 중 · 128개 · 412 MB</div>
+                <div class="drow"><span class="dot warn"></span><b>이미지 태그</b>1개 대기 중</div>
+                <div class="drow"><span class="dot ok"></span><b>빠른 패널</b>Ctrl+Shift+V 등록됨</div>
+              </div>
+              <div class="card dcard"><div class="dcard-h"><i class="g">&#xE7C4;</i>창 빠른 전환</div>
+                <div class="drow"><span class="dot ok"></span><b>단축키</b>준비됨 · 5 / 8 등록</div>
+              </div>
+              <div class="card dcard"><div class="dcard-h"><i class="g">&#xE774;</i>Antigravity 브릿지</div>
+                <div class="drow"><span class="dot ok"></span><b>로컬 API</b>실행 중 · 127.0.0.1:8877</div>
+              </div>
+            </div>
+            <div class="grp">
+              <div class="grp-h">오디오 효과 설치</div>
+              <div class="sc"><i class="g">&#xE7B8;</i><div class="sct"><span>설치됨</span><span class="d">SMSL USB AUDIO, MOTU M Series에 등록 · 이 PC 전용 미서명 모듈 사용 중</span></div><div class="scc"><span class="btn">원래 설정 복원</span></div></div>
+              <div class="sc"><i class="g">&#xE895;</i><div class="sct"><span>출력 장치 자동 복구</span><span class="d">1분마다 같은 하드웨어를 찾습니다 · 마지막 확인 10:24</span></div><div class="scc"><span class="pill"><span class="dot ok"></span>정상</span></div></div>
+            </div>
+            <div class="grp">
+              <div class="grp-h row"><span>최근 기록</span><span class="grow"></span><span class="btn subtle sm"><i class="g" style="font-size:13px">&#xE838;</i>기록 폴더 열기</span></div>
+              <div class="card log">
+                <div class="lrow"><time>10:24:03</time><span>오디오</span><p>마이크 처리 시작 · 48,000 Hz</p></div>
+                <div class="lrow"><time>10:23:58</time><span>오디오</span><p>스피커 EQ 처리 시작 · 48,000 Hz</p></div>
+                <div class="lrow"><time>10:12:40</time><span>클립보드</span><p>이미지 태그 저장 완료</p></div>
+                <div class="lrow"><time>09:58:11</time><span>창 전환</span><p>Win+1 등록 · Visual Studio Code</p></div>
+                <div class="lrow"><time>09:41:27</time><span>브릿지</span><p>시작 · 127.0.0.1:8877</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <p class="outro">고칠 화면은 번호로 알려 주세요. 예를 들어 "06 키 타일을 더 작게", "02 패널 높이를 낮게"처럼 말하면 해당 시안만 고친 뒤 WinUI 3 화면으로 옮깁니다.</p>
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var buttons = Array.prototype.slice.call(document.querySelectorAll('[data-theme-choice]'));
+  function mark(choice) {
+    buttons.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.themeChoice === choice)); });
+  }
+  function apply(choice) {
+    if (choice === 'light' || choice === 'dark') root.dataset.theme = choice; else delete root.dataset.theme;
+    mark(choice);
+  }
+  var saved = null;
+  try { saved = localStorage.getItem('pt-windows-mock-theme'); } catch (e) {}
+  if (saved) apply(saved); else mark(root.dataset.theme || 'system');
+  buttons.forEach(function (b) {
+    b.addEventListener('click', function () {
+      apply(b.dataset.themeChoice);
+      try { localStorage.setItem('pt-windows-mock-theme', b.dataset.themeChoice); } catch (e) {}
+    });
+  });
+
+  // The dialog sits over a dimmed copy of screen 01.
+  var source = document.querySelector('[data-clone-source]');
+  var target = document.querySelector('[data-clone-target]');
+  if (source && target) {
+    var copy = source.cloneNode(true);
+    copy.removeAttribute('data-clone-source');
+    copy.setAttribute('aria-hidden', 'true');
+    target.insertBefore(copy, target.firstChild);
+  }
+
+  // Mocks are drawn at true size; scale each one to its stage.
+  function fit(stage) {
+    var frame = stage.firstElementChild;
+    var width = parseFloat(frame.getAttribute('data-w'));
+    if (!width) return;
+    frame.style.zoom = Math.min(1, stage.clientWidth / width);
+  }
+  var stages = Array.prototype.slice.call(document.querySelectorAll('.stage'));
+  stages.forEach(fit);
+  if ('ResizeObserver' in window) {
+    var observer = new ResizeObserver(function (entries) { entries.forEach(function (e) { fit(e.target); }); });
+    stages.forEach(function (s) { observer.observe(s); });
+  } else {
+    window.addEventListener('resize', function () { stages.forEach(fit); });
+  }
+})();
+</script>

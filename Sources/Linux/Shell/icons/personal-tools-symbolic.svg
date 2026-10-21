@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <title>Personal Tools</title>
+  <g fill="#2e3436">
+    <path d="M1 2h2v2H1zm6 0h8v2H7zM1 7h8v2H1zm12 0h2v2h-2zM1 12h2v2H1zm6 0h8v2H7z"/>
+    <rect x="3" width="4" height="6" rx="2"/>
+    <rect x="9" y="5" width="4" height="6" rx="2"/>
+    <rect x="3" y="10" width="4" height="6" rx="2"/>
+  </g>
+</svg>

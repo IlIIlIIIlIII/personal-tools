@@ -1,0 +1,33 @@
+#!/usr/bin/env python3
+"""Explicit per-user setup. Package installation never downloads models or logs in."""
+import argparse
+import subprocess
+
+parser=argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--npu', action='store_true', help='Download verified NPU runtime/model and run actual NPU probe')
+parser.add_argument('--vllm', action='store_true', help='Install isolated Python 3.12 vLLM and register its user service')
+parser.add_argument('--download-model', action='store_true', help='Also download the pinned Qwen checkpoint (requires --vllm)')
+parser.add_argument('--enable', action='store_true', help='Enable login startup and request GNOME extension enablement')
+parser.add_argument('--disable', action='store_true', help='Restore owned audio/HDR state, stop app services and disable login startup')
+args=parser.parse_args()
+if args.enable and args.disable: parser.error('--enable and --disable are mutually exclusive')
+if args.download_model and not args.vllm: parser.error('--download-model requires --vllm')
+if not any([args.npu,args.vllm,args.enable,args.disable]): parser.print_help();raise SystemExit(0)
+def run(*command,check=True): return subprocess.run(command,check=check)
+if args.npu: run('python3','/usr/lib/personal-tools/prepare-npu.py','--probe','/usr/lib/personal-tools/audio/PersonalToolsAudio')
+if args.vllm: run('python3','/usr/share/personal-tools/Vllm/runtime.py','install',*(['--download-model'] if args.download_model else []))
+if args.disable:
+    # Clean shutdown restores only state still owned by this app. vLLM is independent.
+    run('systemctl','--user','stop','personal-tools.service')
+    run('systemctl','--user','stop','personal-tools-audio.service')
+    run('systemctl','--user','disable','personal-tools.service')
+    run('gnome-extensions','disable','personal-tools@griplabs.io',check=False)
+    print('Personal Tools stopped. History, filters, model and vLLM service are preserved.')
+if args.enable:
+    run('systemctl','--user','daemon-reload')
+    # Recreate install links after an update, including removing the legacy
+    # default.target link. Without --now this never starts or restarts audio.
+    run('systemctl','--user','reenable','personal-tools.service')
+    enabled=run('gnome-extensions','enable','personal-tools@griplabs.io',check=False)
+    if enabled.returncode: print('GNOME has not loaded the new extension yet. Log out and back in, then run personal-tools-setup --enable again.')
+    print('Login startup enabled. Run personal-tools to open the app.')

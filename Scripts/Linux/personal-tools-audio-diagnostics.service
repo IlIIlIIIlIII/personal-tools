@@ -1,0 +1,21 @@
+[Unit]
+Description=Personal Tools read-only audio diagnostics
+After=pipewire.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 %h/.local/lib/personal-tools/linux-audio-diagnostics.py
+Environment=XDG_STATE_HOME=%h/.local/state
+Restart=on-failure
+RestartSec=5
+UMask=0077
+Nice=10
+CPUWeight=10
+MemoryMax=128M
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/.local/state/personal-tools/audio-diagnostics
+
+[Install]
+WantedBy=default.target

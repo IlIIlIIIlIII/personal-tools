@@ -3,9 +3,9 @@
 param(
     [string]$BuildDirectory = 'build\windows-native',
     [string]$PackageDirectory = 'build\winui-package',
-    [string]$ToolchainDirectory = 'build\tooling\llvm-mingw-20260908-ucrt-x86_64',
+    [string]$ToolchainDirectory = 'build\tooling\llvm-mingw-20261006-ucrt-x86_64',
     [string]$SdkDirectory = 'build\tooling\windows-sdk\c\Include\10.0.26100.0\um',
-    [string]$CMakeDirectory = 'build\tooling\cmake-4.4.3-windows-x86_64\bin',
+    [string]$CMakeDirectory = 'build\tooling\cmake-4.4.4-windows-x86_64\bin',
     [string]$DotNet = "$env:LOCALAPPDATA\PersonalTools\Tooling\dotnet\dotnet.exe"
 )
 $ErrorActionPreference = 'Stop'

@@ -16,6 +16,9 @@ public sealed record ClipboardSettings
     public uint HotkeyKey { get; init; } = 0x56;
     public long ItemLimitBytes { get; init; } = 100L * 1024 * 1024;
     public long TotalLimitBytes { get; init; } = 10L * 1024 * 1024 * 1024;
+    // Both send archive content to Antigravity, so they stay off until enabled.
+    public bool AiSearchEnabled { get; init; }
+    public bool AutoTagImages { get; init; }
     public static ClipboardSettings Load()
     {
         var path = Path.Combine(SettingsDirectory, "settings.json");
@@ -31,8 +34,10 @@ public sealed record ClipboardSettings
 }
 
 public sealed record ClipAttachment(string OriginalName, string RelativePath, long Length, string Sha256);
+public sealed record ClipImageTags(string[] Tags, string Description, string Text, string Model, DateTimeOffset CreatedAt);
 public sealed record ClipEntry(string Id, string Kind, DateTimeOffset CreatedAt, string SourceApp,
-    string Preview, string ContentHash, string RelativeDirectory, ClipAttachment[] Attachments, bool Pinned = false, string? ContentFormat = null, string? SourcePath = null)
+    string Preview, string ContentHash, string RelativeDirectory, ClipAttachment[] Attachments, bool Pinned = false, string? ContentFormat = null, string? SourcePath = null,
+    ClipImageTags? ImageTags = null, string? ImageTagState = null)
 {
     public string Label => $"{(Pinned ? "★ " : "")}{Preview}";
     public string Detail => $"{Kind} · {CreatedAt.ToLocalTime():MM-dd HH:mm} · {SourceApp}";
@@ -104,6 +109,9 @@ public sealed class ClipboardStore
             if (string.IsNullOrEmpty(query)) { matches.Add(item); continue; }
             if (item.Preview.Contains(query, StringComparison.OrdinalIgnoreCase) || item.SourceApp.Contains(query, StringComparison.OrdinalIgnoreCase)
                 || item.Attachments.Any(x => x.OriginalName.Contains(query, StringComparison.OrdinalIgnoreCase)))
+            { matches.Add(item); continue; }
+            if (item.ImageTags is { } tags && (tags.Description.Contains(query, StringComparison.OrdinalIgnoreCase) || tags.Text.Contains(query, StringComparison.OrdinalIgnoreCase)
+                || tags.Tags.Any(tag => tag.Contains(query, StringComparison.OrdinalIgnoreCase))))
             { matches.Add(item); continue; }
             if (item.Kind != "Text") continue;
             try
@@ -342,6 +350,42 @@ public sealed class ClipboardStore
         }
         finally { gate.Release(); }
         Changed?.Invoke();
+    }
+    // A record put back on the clipboard becomes the newest, so the first card is what Ctrl+V pastes.
+    public async Task TouchAsync(ClipEntry entry)
+    {
+        await gate.WaitAsync();
+        try
+        {
+            var current = entries.FirstOrDefault(x => x.Id == entry.Id);
+            if (current is null) return;
+            var updated = current with { CreatedAt = DateTimeOffset.UtcNow };
+            string path = SafePath(Root, Path.Combine(current.RelativeDirectory, "metadata.json"));
+            await File.WriteAllTextAsync(path + ".tmp", JsonSerializer.Serialize(updated, Json));
+            File.Move(path + ".tmp", path, true);
+            entries = [updated, .. entries.Where(x => x.Id != entry.Id)]; lastHash = updated.ContentHash;
+        }
+        finally { gate.Release(); }
+        Changed?.Invoke();
+    }
+    // Returns false when the record was deleted or replaced while it was being analysed.
+    public async Task<bool> SetImageTagsAsync(string id, string hash, ClipImageTags? tags, string state, CancellationToken token = default)
+    {
+        if (state is not ("pending" or "processing" or "complete" or "failed")) throw new ArgumentException("이미지 태그 상태가 올바르지 않습니다.");
+        await gate.WaitAsync(token);
+        try
+        {
+            var current = entries.FirstOrDefault(x => x.Id == id && x.ContentHash == hash);
+            if (current is null) return false;
+            var updated = current with { ImageTags = tags, ImageTagState = state };
+            string path = SafePath(Root, Path.Combine(current.RelativeDirectory, "metadata.json"));
+            await File.WriteAllTextAsync(path + ".tmp", JsonSerializer.Serialize(updated, Json), token);
+            File.Move(path + ".tmp", path, true);
+            entries = entries.Select(x => x.Id == id ? updated : x).ToArray();
+        }
+        finally { gate.Release(); }
+        Changed?.Invoke();
+        return true;
     }
     public async Task DeleteAsync(ClipEntry entry)
     {

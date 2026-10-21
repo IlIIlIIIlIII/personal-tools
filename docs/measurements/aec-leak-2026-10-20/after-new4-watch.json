@@ -1,0 +1,4 @@
+{"event":"start","qpc100ns":77661981096}
+{"event":"stream","seconds":0.76,"channel":0,"generation":5}
+{"event":"stream","seconds":0.79,"channel":1,"generation":5}
+{"seconds":34.0,"channels":[{"channel":1,"packets":6228,"jitterP99Ms":0.168,"jitterMaxMs":0.798,"jitterOver1ms":0,"indexGaps":0,"lost":0,"blocks":4149,"unreferencedBlocks":2515,"holeSamples":0,"holes":0,"resetHoles":0,"referenceHoles":0,"otherHoles":0,"lateEvents":0,"lateWhileReference":0,"lateMs":0.0,"apoMissMs":0.0,"echoDelayUs":34812,"referenceShiftUs":21875,"state":2,"restarts":0}]}

@@ -34,6 +34,8 @@ struct alignas(64) Meter {
     volatile LONG inputFrames = 0, inputSignature = 0, linearReductionDB100 = 0;
     volatile LONG neuralState = 0;
     volatile LONG64 neuralBlocks = 0;
+    // Former tail padding: automatic NPU worker restarts and the last failed stage.
+    volatile LONG neuralRestarts = 0, neuralFailure = 0;
 };
 static_assert(sizeof(Meter) == 128);
 struct SharedData {

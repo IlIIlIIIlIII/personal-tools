@@ -12,7 +12,8 @@ internal readonly record struct ClipboardPanelBounds(int X, int Y, int Width, in
             int gap = Math.Min(Math.Min(width / 4, height / 4), (int)Math.Round(12 * (dpi == 0 ? 96 : dpi) / 96d));
             return AtBottom(x + gap, y + gap, width - gap * 2, height - gap * 2, dpi);
         }
-        int panelHeight = Math.Min(height, Math.Max(1, (int)Math.Round(340 * (dpi == 0 ? 96 : dpi) / 96d)));
+        // 12 padding + 32 header + 12 gap + 236 cards + 12 padding.
+        int panelHeight = Math.Min(height, Math.Max(1, (int)Math.Round(304 * (dpi == 0 ? 96 : dpi) / 96d)));
         return new(x, y + height - panelHeight, width, panelHeight);
     }
 }

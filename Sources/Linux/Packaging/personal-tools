@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+if [ "${1:-}" = "--quit" ]; then
+    gdbus call --session --dest io.griplabs.PersonalTools --object-path /io/griplabs/PersonalTools --method io.griplabs.PersonalTools1.Execute lifecycle quit '{}'
+    exit
+fi
+systemctl --user start personal-tools.service
+exec gjs -m /usr/share/personal-tools/App/app.js "$@"

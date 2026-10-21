@@ -14,20 +14,25 @@ internal sealed class ClipboardPopup : Window
     private readonly ClipboardPanelNative native;
     private readonly DispatcherQueueTimer animation;
     private readonly Stopwatch animationClock = new();
+    private readonly nint handle;
     private ClipboardPanelBounds bounds;
     private nint target;
     private bool visible, exiting;
     private int presentation;
-    public ClipboardPopup(ClipboardController controller)
+    public ClipboardPopup(ClipboardController controller, Action openMain, Action openSettings)
     {
         this.controller = controller;
         Title = "클립보드 · Personal Tools";
         SystemBackdrop = new ClipboardAcrylicBackdrop();
         page = new ClipboardPage(); Content = page;
+        page.UsePanelMode();
         page.UseDesktopAcrylic();
-        page.Configure(controller, this); page.PasteRequested = PasteAsync; page.Dismiss = Hide;
+        page.Configure(controller); page.PasteRequested = PasteAsync; page.Dismiss = Hide;
+        page.OpenMainRequested += openMain;
+        page.SettingsRequested += openSettings;
         page.Suspend();
-        native = new(WindowNative.GetWindowHandle(this), QueueDismiss);
+        handle = WindowNative.GetWindowHandle(this);
+        native = new(handle, QueueDismiss);
         if (AppWindow.Presenter is OverlappedPresenter presenter)
         {
             presenter.SetBorderAndTitleBar(false, false);
@@ -73,7 +78,10 @@ internal sealed class ClipboardPopup : Window
             native.ClipReveal(bounds.Width, 1);
             AppWindow.Move(new PointInt32(bounds.X, bounds.Y + bounds.Height - 1));
         }
-        visible = true; AppWindow.Show(); Activate(); page.FocusSearch();
+        visible = true; AppWindow.Show(); Activate();
+        // Without the foreground, arrow keys and Enter would still go to the previous app.
+        ClipboardNative.ForceForeground(handle);
+        if (animate) page.ResetForOpen(); else page.Resume();
         try { native.Start(); }
         catch { Hide(); throw; }
         if (motion) { animationClock.Restart(); animation.Start(); }
@@ -101,11 +109,16 @@ internal sealed class ClipboardPopup : Window
         await controller.CopyAsync(entry);
         // An outside click during an asynchronous copy must never steal the new focus.
         if (!visible || current != presentation) return;
+        // Hand the foreground back while the panel still owns it. Once the panel is hidden,
+        // Windows activates some other window and may refuse the switch to the target.
+        ClipboardNative.ForceForeground(target);
         Hide(); current = presentation;
-        if (!await ClipboardNative.PasteAsync(target) && current == presentation)
+        try { await ClipboardNative.PasteAsync(target); }
+        catch (InvalidOperationException)
         {
-            Show(false);
-            throw new InvalidOperationException("자동 붙여넣기를 완료하지 못했습니다. 대상 앱에서 Ctrl+V를 눌러 주세요.");
+            // The panel was reopened meanwhile; that presentation owns the focus now.
+            if (current != presentation) return;
+            Show(false); throw;
         }
     }
     public async Task ShutdownAsync()

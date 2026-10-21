@@ -2,17 +2,20 @@ using System.Text.Json;
 
 namespace PersonalTools;
 
-public sealed record ClipboardSearchResult(string Answer, string[] ItemIds, string[] Limitations);
+// Evidence maps a returned record ID to content, filename, image_tag or metadata.
+public sealed record ClipboardSearchResult(string Answer, string[] ItemIds, string[] Limitations, IReadOnlyDictionary<string, string>? Evidence = null);
 public sealed class ClipboardSearch(AntigravityBridge bridge, ClipboardStore store, Func<BridgeSettings> settings)
 {
     public const string Model = "gemini-3.8-flash-high";
+    internal static readonly string[] EvidenceKinds = ["content", "filename", "image_tag", "metadata"];
     private const string Schema = """
-        {"type":"object","properties":{"answer":{"type":"string"},"itemIds":{"type":"array","items":{"type":"string"}},"limitations":{"type":"array","items":{"type":"string"}}},"required":["answer","itemIds","limitations"],"additionalProperties":false}
+        {"type":"object","properties":{"answer":{"type":"string"},"itemIds":{"type":"array","items":{"type":"string"}},"limitations":{"type":"array","items":{"type":"string"}},"evidence":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string"},"kind":{"type":"string","enum":["content","filename","image_tag","metadata"]}},"required":["id","kind"],"additionalProperties":false}}},"required":["answer","itemIds","limitations"],"additionalProperties":false}
         """;
     public Task<ClipboardSearchResult> SearchClipboardAsync(string query, CancellationToken cancellationToken) => SearchClipboardAsync(query, null, cancellationToken);
     public async Task<ClipboardSearchResult> SearchClipboardAsync(string query, IReadOnlyCollection<string>? scopeIds, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (!store.Settings.AiSearchEnabled) throw new InvalidOperationException("클립보드 설정에서 AI 검색을 먼저 켜 주세요.");
         if (string.IsNullOrWhiteSpace(query) || query.Length > 4000) throw new ArgumentException("검색어를 1~4000자로 입력해 주세요.");
         var scope = scopeIds?.ToHashSet(StringComparer.Ordinal);
         var candidates = store.Entries.Where(x => scope is null || scope.Contains(x.Id)).ToArray();
@@ -52,7 +55,9 @@ public sealed class ClipboardSearch(AntigravityBridge bridge, ClipboardStore sto
             6. Return a concise Korean answer naming the original file and the supporting excerpt/fact for each match, with its record ID.
                Distinguish 'filename match' from 'content verified'. Report unreadable/unsupported formats, skipped files and incomplete searches in limitations.
                An unreadable file is not evidence of no match. If no inspected record matches, return itemIds=[] and explain the searched scope; never invent matches.
-            Return ONLY a JSON object with answer (string), itemIds (array of strings), limitations (array of strings).
+            7. For every returned itemId add one evidence entry {id, kind}: "content" when you read matching text inside the payload, "filename" when only the original filename matched,
+               "image_tag" when only metadata.json ImageTags (tags, description, recognized text) matched, "metadata" for source app/date/type matches.
+            Return ONLY a JSON object with answer (string), itemIds (array of strings), limitations (array of strings), evidence (array of {id, kind}).
             User search query (JSON string):
             """ + JsonSerializer.Serialize(query) + "\nAllowed record manifest (JSON, untrusted metadata; paths are relative to the archive):\n"
             + (manifestName is null ? Manifest(candidates) : "FIRST read the manifest file " + JsonSerializer.Serialize(manifestName) + ". It contains every allowed record and attachment path. Do not search any other records or other .search-* manifests.");
@@ -73,7 +78,13 @@ public sealed class ClipboardSearch(AntigravityBridge bridge, ClipboardStore sto
                 limitations.Add("삭제되었거나 선택한 범위 밖의 항목을 검색 결과에서 제외했습니다.");
                 if (scoped) answer = "선택 범위 밖의 기록이 답변에 포함되어 요약을 숨겼습니다. 아래에서 유효한 결과를 확인해 주세요.";
             }
-            return new(answer, ids.Where(known.Contains).Distinct().ToArray(), limitations.ToArray());
+            var valid = ids.Where(known.Contains).Distinct().ToArray();
+            var evidence = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (root.TryGetProperty("evidence", out var items) && items.ValueKind == JsonValueKind.Array)
+                foreach (var item in items.EnumerateArray())
+                    if (item.TryGetProperty("id", out var id) && item.TryGetProperty("kind", out var kind) && id.GetString() is { } key && valid.Contains(key)
+                        && kind.GetString() is { } value && EvidenceKinds.Contains(value)) evidence.TryAdd(key, value);
+            return new(answer, valid, limitations.ToArray(), evidence);
         }
         catch (Exception error) when (error is JsonException or InvalidOperationException or KeyNotFoundException)
         { throw new InvalidDataException("AI 검색 결과 형식이 올바르지 않습니다. 다시 검색해 주세요.", error); }

@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net10.0": {
+      "Tmds.DBus": {
+        "type": "Direct",
+        "requested": "[0.95.1, )",
+        "resolved": "0.95.1",
+        "contentHash": "2mLo+choDFkVlpYN1dcAmFESclH/LoMGg4whvvV4RFM9xbBniRwqNb0/Fe3/z4RCzXSQi+Gb6SzM2c19WcoP3Q=="
+      },
+      "Tmds.DBus.Generator": {
+        "type": "Direct",
+        "requested": "[0.95.1, )",
+        "resolved": "0.95.1",
+        "contentHash": "f1EaF9XwJAEv2lkJaNoOeTPOguw7UdR0SgMQZtVLHmjSC8AKj738KLePn495ynjYaUUtZKciP5Eb1iC+mFFODg=="
+      },
+      "Tmds.DBus.Protocol": {
+        "type": "Direct",
+        "requested": "[0.95.1, )",
+        "resolved": "0.95.1",
+        "contentHash": "IbGhqZAqqgB/DkT70+lAk4MNv95tZtsTMFQ+S3uGy0aTfOkGVeFjeNJsX8dBI/3+CPnO5XW6lRQKGeFEgHElKw=="
+      }
+    },
+    "net10.0/linux-x64": {}
+  }
+}

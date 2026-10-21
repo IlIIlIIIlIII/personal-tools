@@ -1,0 +1,65 @@
+<UserControl x:Class="PersonalTools.VllmPage"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+ <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+  <StackPanel MaxWidth="1040" Margin="32,28,32,32" Spacing="28">
+   <StackPanel Spacing="8">
+    <TextBlock Text="vLLM" Style="{ThemeResource TitleTextBlockStyle}"/>
+    <TextBlock Text="로컬 AI 모델의 시작부터 대화 준비까지 한눈에 확인하세요." Style="{StaticResource Muted}"/>
+   </StackPanel>
+   <Border Style="{StaticResource Card}">
+    <StackPanel Spacing="20">
+     <Grid ColumnSpacing="16">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <Border Width="48" Height="48" CornerRadius="12" Background="{ThemeResource AccentFillColorDefaultBrush}">
+       <FontIcon Glyph="&#xE950;" FontSize="24" Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"/>
+      </Border>
+      <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+       <TextBlock Text="Qwen3.8 · 27B" FontSize="24" FontWeight="SemiBold"/>
+       <TextBlock x:Name="ContextText" Style="{StaticResource Muted}"/>
+      </StackPanel>
+      <Border Grid.Column="2" CornerRadius="12" Padding="12,6" Background="{ThemeResource ControlFillColorSecondaryBrush}" VerticalAlignment="Top">
+       <StackPanel Orientation="Horizontal" Spacing="8">
+        <Ellipse x:Name="StatusDot" Width="7" Height="7" Fill="{ThemeResource TextFillColorSecondaryBrush}"/>
+        <TextBlock x:Name="StatusText" Text="확인 중" FontSize="12" FontWeight="SemiBold"/>
+       </StackPanel>
+      </Border>
+     </Grid>
+     <TextBlock x:Name="StartProfileText" TextWrapping="Wrap" Style="{StaticResource Muted}"/>
+     <StackPanel Orientation="Horizontal" Spacing="12">
+      <Button x:Name="StartButton" Click="StartClick" Style="{ThemeResource AccentButtonStyle}" Padding="20,10">
+       <StackPanel Orientation="Horizontal" Spacing="8"><FontIcon Glyph="&#xE768;" FontSize="12"/><TextBlock x:Name="StartLabel" Text="vLLM 시작"/></StackPanel>
+      </Button>
+      <Button x:Name="StopButton" Click="StopClick" Padding="16,10" ToolTipService.ToolTip="실행 중인 vLLM 서버를 중지합니다.">
+       <StackPanel Orientation="Horizontal" Spacing="8"><FontIcon Glyph="&#xE71A;" FontSize="12"/><TextBlock x:Name="StopLabel" Text="중지"/></StackPanel>
+      </Button>
+      <Button x:Name="RefreshButton" Click="RefreshClick" Padding="12,10" AutomationProperties.Name="연결 상태 새로 고침" ToolTipService.ToolTip="연결 상태 새로 고침"><FontIcon Glyph="&#xE72C;" FontSize="16"/></Button>
+      <Button Content="API 주소 복사" Click="CopyClick" Padding="16,10"/>
+     </StackPanel>
+     <InfoBar x:Name="ErrorBar" IsOpen="False" IsClosable="False" Severity="Error" Title="vLLM 확인 필요"/>
+    </StackPanel>
+   </Border>
+   <StackPanel Spacing="20">
+    <Grid>
+     <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+     <TextBlock Text="시작 과정" Style="{StaticResource SectionTitle}"/>
+     <TextBlock x:Name="ProgressElapsed" Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource Muted}"/>
+    </Grid>
+    <Grid x:Name="ProgressSteps" SizeChanged="StepsSizeChanged"/>
+    <Border Background="{ThemeResource ControlFillColorSecondaryBrush}" CornerRadius="8" Padding="16">
+     <StackPanel Spacing="10">
+      <TextBlock x:Name="ProgressHeading" FontWeight="SemiBold" TextWrapping="Wrap"/>
+      <TextBlock x:Name="ProgressDetail" Style="{StaticResource Muted}"/>
+      <ProgressBar x:Name="Progress" IsIndeterminate="True" Visibility="Collapsed"/>
+     </StackPanel>
+    </Border>
+   </StackPanel>
+   <Border Height="1" Background="{ThemeResource DividerStrokeColorDefaultBrush}"/>
+   <StackPanel Spacing="8">
+    <TextBlock Text="연결 주소" FontWeight="SemiBold"/>
+    <TextBlock Text="http://127.0.0.1:8000/v1" IsTextSelectionEnabled="True" TextWrapping="Wrap"/>
+    <TextBlock Text="앱을 닫아도 서버는 유지됩니다. Windows 위젯의 Personal Tools에서도 vLLM을 시작할 수 있습니다." Style="{StaticResource Muted}"/>
+   </StackPanel>
+  </StackPanel>
+ </ScrollViewer>
+</UserControl>

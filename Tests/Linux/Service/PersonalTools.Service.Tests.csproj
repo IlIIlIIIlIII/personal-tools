@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><AssemblyName>PersonalTools.Service.Tests</AssemblyName></PropertyGroup>
+ <ItemGroup><ProjectReference Include="../../../Sources/Linux/Service/PersonalTools.Service.csproj" /></ItemGroup>
+ <ItemGroup>
+  <PackageReference Include="Tmds.DBus.Generator" Version="0.95.1" PrivateAssets="all"/>
+  <AdditionalFiles Include="../../../Sources/Linux/Protocol/io.griplabs.PersonalTools1.xml" Namespace="PersonalTools.Tests.Bus" DBusGeneratorMode="Proxy"/>
+ </ItemGroup>
+</Project>

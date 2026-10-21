@@ -7,6 +7,7 @@
     <AssemblyName>PersonalToolsWindows</AssemblyName>
     <Product>Personal Tools</Product>
     <Title>Personal Tools</Title>
+    <AssemblyTitle>Personal Tools</AssemblyTitle>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets/PersonalTools.ico</ApplicationIcon>
     <Platforms>x64</Platforms>
@@ -24,6 +25,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <!-- Set aside for now (2026-10-20 Windows scope): HDR, display power, vLLM and the microphone shortcut. -->
+  <ItemGroup>
+    <Compile Remove="Hdr*.cs;DisplayPower*.cs;Vllm*.cs;MicrophoneMute.cs" />
+    <Page Remove="HdrPage.xaml;VllmPage.xaml" />
+    <None Remove="DisplayPowerProbe.ps1;VllmStart.py" />
+  </ItemGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <Content Update="Assets/PersonalTools.png" CopyToOutputDirectory="PreserveNewest" />
@@ -31,4 +38,17 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260804001" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.6584" />
   </ItemGroup>
+  <!-- AudioService P/Invokes the native UI bridge, whose loopback worker is the only source of the
+       speaker reference for echo cancellation. Packages get it from `cmake install` (ui\), so a
+       publish never replaces it; dev outputs (dotnet build -o build\<name>) copy the native build. -->
+  <PropertyGroup>
+    <PersonalToolsBridgeDll Condition="'$(PersonalToolsBridgeDll)' == ''">$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)..\..\..\build\windows-native\Sources\Windows\PersonalToolsBridge.dll'))</PersonalToolsBridgeDll>
+  </PropertyGroup>
+  <Target Name="CopyPersonalToolsBridge" AfterTargets="Build">
+    <Warning Condition="!Exists('$(PersonalToolsBridgeDll)')" Text="PersonalToolsBridge.dll not found at $(PersonalToolsBridgeDll). The app falls back to the installed Program Files\PersonalTools\ui copy; without one no speaker reference is captured and echo cancellation does not work. Build build\windows-native first or pass -p:PersonalToolsBridgeDll=&lt;path&gt;." />
+    <Copy Condition="Exists('$(PersonalToolsBridgeDll)')" SourceFiles="$(PersonalToolsBridgeDll)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
+  <Target Name="PublishPersonalToolsBridge" AfterTargets="Publish" Condition="Exists('$(PersonalToolsBridgeDll)') And !Exists('$(PublishDir)PersonalToolsBridge.dll')">
+    <Copy SourceFiles="$(PersonalToolsBridgeDll)" DestinationFolder="$(PublishDir)" />
+  </Target>
 </Project>

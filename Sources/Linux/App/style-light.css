@@ -1,0 +1,146 @@
+/* Generated from shared light tokens. */
+@define-color pt_bg #fafafa;
+@define-color pt_surface #ffffff;
+@define-color pt_raised #eeeeec;
+@define-color pt_input #f5f5f3;
+@define-color pt_border #d4d4ce;
+@define-color pt_text #292a26;
+@define-color pt_muted #5e6158;
+@define-color pt_accent #697238;
+@define-color pt_selected #e5e9d7;
+@define-color pt_focus #657331;
+window.pt-app { background: @pt_bg; color: @pt_text; font-family: 'Ubuntu Sans', 'Noto Sans CJK KR'; font-size: 18px; }
+.pt-app .sidebar { background: @pt_bg; border-right: 1px solid @pt_border; }
+.pt-app .brand { padding: 20px 24px; min-height: 39px; font-size: 20px; }
+.pt-app .brand image { color: @pt_focus; }
+.pt-app button.brand-button { padding: 0; border: 0; border-radius: 0; background: transparent; }
+.pt-app button.brand-button:hover { background: alpha(@pt_text,0.04); }
+.pt-app .nav-button { border: 0; border-radius: 6px; min-height: 60px; padding: 0 28px; background: transparent; font-weight: 400; box-shadow: none; }
+.pt-app .nav-button.selected { background: @pt_selected; box-shadow: inset 4px 0 @pt_focus; }
+.pt-app .nav-button:hover { background: alpha(@pt_text, 0.06); }
+.pt-app .nav-button.selected:hover { background: @pt_selected; }
+.pt-app .app-header { min-height: 79px; padding: 0 26px 0 32px; border-bottom: 1px solid @pt_border; background: @pt_bg; }
+.pt-app .app-header entry { margin: 17px 0; }
+.pt-app .app-header > button, .pt-app .app-header > .segmented { margin: 17px 0; }
+.pt-app .page-title { font-size: 32px; font-weight: 700; }
+.pt-app .section-title { font-size: 24px; font-weight: 600; }
+.pt-app .card-title, .pt-app .strong { font-size: 18px; font-weight: 600; }
+.pt-app .caption { font-size: 16px; color: @pt_muted; }
+.pt-app .small { font-size: 14px; color: @pt_muted; }
+.pt-app .muted { color: @pt_muted; }
+.pt-app .accent { color: @pt_focus; }
+.pt-app .error { color: #b8282a; }
+.pt-app .warning { color: #966213; }
+.pt-app .mono { font-family: 'Ubuntu Sans Mono', 'Noto Sans CJK KR'; }
+.pt-app button { border: 1px solid @pt_border; border-radius: 8px; min-height: 42px; padding: 0 16px; color: @pt_text; background: @pt_surface; box-shadow: none; font-weight: 400; }
+.pt-app button:hover { background: @pt_raised; }
+.pt-app button:active { background: @pt_selected; }
+.pt-app button:focus-visible, .pt-app switch:focus-visible, .pt-app checkbutton:focus-visible, .pt-app dropdown:focus-visible, .pt-app .table-row:focus-visible { outline: 2px solid @pt_focus; outline-offset: -2px; }
+.pt-app button:disabled { opacity: 0.45; }
+.pt-app button.primary { color: #f3f2ed; background: @pt_accent; border-color: @pt_focus; }
+.pt-app button.primary:hover { background: shade(@pt_accent,1.12); }
+.pt-app button.flat { border-color: transparent; background: transparent; }
+.pt-app button.flat:hover { background: @pt_surface; }
+.pt-app button.icon-button { min-width: 42px; padding: 0; }
+.pt-app button.danger { color: #b8282a; }
+.pt-app entry, .pt-app spinbutton, .pt-app dropdown > button { min-height: 42px; border-radius: 8px; background: @pt_input; color: @pt_text; border: 1px solid @pt_border; padding: 0 14px; box-shadow: none; }
+.pt-app entry:focus-within, .pt-app spinbutton:focus-within { outline: 2px solid @pt_focus; outline-offset: -1px; }
+.pt-app spinbutton button { border: 0; padding: 0 6px; min-width: 18px; min-height: 30px; background: transparent; }
+.pt-app dropdown > button { padding: 0 16px; }
+.pt-app .search-field { min-height: 44px; }
+.pt-app .segmented { border: 1px solid @pt_border; border-radius: 8px; background: @pt_surface; }
+.pt-app .segmented button { border: 0; border-radius: 6px; min-height: 42px; min-width: 64px; background: transparent; }
+.pt-app .segmented button.selected { background: @pt_accent; color: #f3f2ed; box-shadow: inset 0 0 0 1px @pt_focus; }
+.pt-app .page-content { padding: 16px 32px 16px; }
+.pt-app .content-pad { padding: 32px; }
+.pt-app .settings-content { padding: 16px 32px 24px; }
+.pt-app .settings-content > .group { margin-bottom: 12px; }
+.pt-app .settings-content .preference-row { min-height: 68px; }
+.pt-app .clipboard-settings-content { padding: 24px 32px 16px; }
+.pt-app .clipboard-settings-content > .group { margin-bottom: 16px; }
+.pt-app .clipboard-settings-content .preference-row { min-height: 82px; }
+.pt-app .clipboard-settings-content .storage-group .preference-row { min-height: 76px; }
+.pt-app .settings-note { padding: 8px 24px; border-top: 1px solid @pt_border; }
+.pt-app .sound-content { padding: 16px 32px 24px; }
+.pt-app .sound-speaker { padding: 14px; }
+.pt-app .sound-device-row { padding: 6px 8px; }
+.pt-app .sound-channel { padding: 12px; }
+.pt-app .sound-channel button { min-height: 36px; }
+.pt-app .sound-channel spinbutton { min-height: 36px; padding: 0 6px; }
+.pt-app .sound-channel spinbutton button { min-width: 14px; min-height: 28px; padding: 0 2px; }
+.pt-app .group { background: @pt_surface; border: 1px solid @pt_border; border-radius: 12px; }
+.pt-app .group-pad { padding: 24px; }
+.pt-app .inset { background: @pt_input; border: 1px solid alpha(@pt_border,0.65); border-radius: 8px; padding: 16px; }
+.pt-app .preference-row { min-height: 74px; padding: 0 24px; }
+.pt-app .preference-row + .preference-row { border-top: 1px solid @pt_border; }
+.pt-app .separator { background: @pt_border; min-height: 1px; }
+.pt-app switch { min-width: 56px; min-height: 30px; border-radius: 18px; background: #50504e; border: 0; padding: 0; }
+.pt-app switch:checked { background: @pt_accent; }
+.pt-app switch slider { border-radius: 50%; background: #f3f2ed; min-width: 26px; min-height: 26px; margin: 2px; box-shadow: none; }
+.pt-app .clip-card { background: @pt_surface; border: 1px solid @pt_border; border-radius: 12px; padding: 16px; min-height: 0; }
+.pt-app .clip-card:hover { background: @pt_raised; border-color: alpha(@pt_focus,0.6); }
+.pt-app .clip-card.selected { outline: 2px solid @pt_focus; outline-offset: -2px; }
+.pt-app .clip-card .clip-content { background: @pt_input; border: 1px solid alpha(@pt_border,0.65); border-radius: 8px; padding: 12px 16px; }
+.pt-app .thumbnail { border-radius: 8px; }
+.pt-app .clip-grid > flowboxchild { padding: 0; margin: 0; border: 0; }
+.pt-app .clip-grid { padding: 2px; }
+.pt-app .selection-bar { background: @pt_surface; border: 1px solid @pt_border; border-radius: 12px; padding: 16px 20px; min-height: 58px; }
+.pt-app .status-dot { color: @pt_focus; }
+.pt-app .keycap { border: 1px solid @pt_border; background: @pt_surface; border-radius: 6px; padding: 6px 12px; font-size: 18px; }
+.pt-app .empty-icon { color: @pt_focus; }
+.pt-app .empty-title { font-size: 32px; font-weight: 700; }
+.pt-app .table-head { color: @pt_muted; padding: 12px 20px; background: alpha(@pt_text,0.025); }
+.pt-app .table-row { padding: 16px 20px; border-top: 1px solid @pt_border; min-height: 34px; }
+.pt-app .table-row.selected { background: @pt_selected; border: 1px solid @pt_focus; border-radius: 8px; }
+.pt-app .dialog-content { padding: 24px; }
+.pt-app .dialog-header { padding: 20px 24px; border-bottom: 1px solid @pt_border; }
+.pt-app .dialog-title { font-size: 24px; font-weight: 600; }
+.pt-app .dialog-actions { padding-top: 20px; }
+.pt-app popover > contents { background: @pt_surface; color: @pt_text; padding: 20px; border: 1px solid @pt_border; border-radius: 12px; }
+.pt-app popover { font-family: 'Ubuntu Sans', 'Noto Sans CJK KR'; font-size: 18px; }
+.pt-app textview, .pt-app textview text { color: @pt_text; background: @pt_input; }
+.pt-app textview { padding: 16px; border: 1px solid @pt_border; border-radius: 8px; }
+.pt-app progressbar trough { min-height: 12px; border: 0; border-radius: 6px; background: @pt_border; }
+.pt-app progressbar progress { min-height: 12px; border-radius: 6px; background: @pt_focus; }
+.pt-app .meter { min-height: 18px; }
+.pt-app .step-number { min-width: 38px; min-height: 38px; border: 1px solid @pt_muted; border-radius: 20px; }
+.pt-app .step-number.done { background: @pt_accent; border-color: @pt_focus; }
+.pt-app .step-number.running { color: @pt_focus; border: 2px solid @pt_focus; }
+.pt-app .step-row { min-height: 70px; }
+.pt-app .status-banner { background: @pt_selected; padding: 12px 20px; border-radius: 8px; }
+.pt-app .failure-banner { background: alpha(#b8282a,0.10); border: 1px solid alpha(#b8282a,0.5); padding: 12px 20px; border-radius: 8px; }
+.pt-app windowcontrols button { border: 0; background: transparent; min-width: 34px; padding: 0; min-height: 34px; }
+.pt-app windowcontrols button image { background: transparent; box-shadow: none; }
+.pt-app .light { color: #292a26; }
+
+.pt-app .detail-metadata { border-left: 1px solid @pt_border; padding-left: 24px; }
+.pt-app.detail-dialog .dialog-content { padding: 0 28px 16px; }
+.pt-app.detail-dialog .dialog-header { border: 0; padding-bottom: 0; }
+.pt-app .detail-footer { min-height: 46px; padding-top: 12px; border-top: 1px solid @pt_border; }
+.pt-app .collection-row { min-height: 60px; padding: 0 16px; }
+.pt-app .collection-row.selected { color: #f3f2ed; background: @pt_accent; border-color: @pt_focus; }
+.pt-app.collections-dialog .dialog-content { padding: 24px 30px; }
+.pt-app.collections-dialog .dialog-actions { padding-top: 6px; }
+.pt-app .filter-dates entry { padding: 0 10px; font-size: 16px; }
+.pt-app windowcontrols image { -gtk-icon-size: 20px; }
+
+.pt-app .inhibitor-detail-row { min-height: 50px; }
+.pt-app .inhibitor-details { padding: 20px 24px; }
+.pt-app .diagnostics-content { padding: 24px 32px; }
+.pt-app .diagnostics-content .table-row { padding: 8px 20px; }
+.pt-app .diagnostics-content .table-head { padding: 8px 20px; }
+.pt-app .diagnostics-content .preference-row { min-height: 68px; }
+.pt-app .meter block { min-height: 16px; min-width: 3px; margin: 0 1px; border-radius: 2px; }
+.pt-app .meter block.filled { background: @pt_focus; border-color: @pt_focus; }
+
+.pt-app .ai-content { padding-top: 20px; padding-bottom: 72px; }
+.pt-app .filter-popover checkbutton { min-height: 26px; }
+.pt-app .inhibitor-detail-row { border-top: 1px solid @pt_border; }
+.pt-app .collections-dialog .dialog-header { min-height: 26px; }
+
+.pt-app checkbutton check { min-width: 20px; min-height: 20px; border-radius: 4px; border: 1px solid @pt_muted; background: @pt_input; color: #f3f2ed; }
+.pt-app checkbutton check:checked { background: @pt_accent; border-color: @pt_focus; }
+.pt-app checkbutton { min-height: 26px; padding: 0; }
+.pt-app checkbutton label { margin-left: 8px; }
+
+.pt-app .step-line { min-width: 1px; background: @pt_border; }
