@@ -1,0 +1,21 @@
+"AppState"
+{
+	"appid"		"2507950"
+	"universe"		"1"
+	"name"		"Delta Force"
+	"StateFlags"		"4"
+	"installdir"		"Delta Force"
+	"SizeOnDisk"		"131341694597"
+	"InstalledDepots"
+	{
+		"2507951"
+		{
+			"manifest"		"8165392051982931622"
+			"size"		"131341694597"
+		}
+	}
+	"UserConfig"
+	{
+		"language"		"koreana"
+	}
+}

@@ -6,14 +6,19 @@ public sealed record HdrMonitor(string Id, string Name, bool Primary, bool Suppo
 public sealed record HdrProgram(Guid Id, string Name, string Path, bool Enabled = true);
 public sealed record HdrProcess(string Key, string Path);
 public sealed record HdrProgramStatus(HdrProgram Program, bool Running);
+// An installed game found in a library. Any process under Folder belongs to it, so the game's own launcher counts.
+public sealed record HdrGame(string Key, string Name, string Source, string Folder, string? Icon = null);
+// ClaimedBy names a manual program inside the game folder; that program's switch decides for the whole game.
+public sealed record HdrGameStatus(HdrGame Game, bool Enabled, bool Running, string? RunningExe = null, string? ClaimedBy = null);
 // One monitor whose HDR automation owns a pending restore, with the programs keeping it.
 public sealed record HdrActive(string MonitorId, bool Original, bool Manual, DateTimeOffset? StartedAt, string[] Programs);
 // DisplayPower stays for the widget wire format; the app no longer fills it.
 public sealed record HdrSnapshot(HdrMonitor[] Monitors, HdrProgramStatus[] Programs, string? Error, string? Warning = null, DisplayPowerSnapshot? DisplayPower = null,
-    bool Enabled = true, HdrActive[]? Active = null);
+    bool Enabled = true, HdrActive[]? Active = null, bool GamesEnabled = true, HdrGameStatus[]? Games = null, DateTimeOffset? GamesScannedAt = null);
 public sealed record HdrRequest(string Command, string? MonitorId = null, bool Enabled = false);
 public sealed record HdrCandidate(string Name, string Path, bool Launcher);
-public sealed record HdrSettings(bool Enabled = true);
+// Games turns library detection on; DisabledGames holds the HdrGame.Key values the user switched off.
+public sealed record HdrSettings(bool Enabled = true, bool Games = true, string[]? DisabledGames = null);
 
 public interface IHdrDisplay
 {

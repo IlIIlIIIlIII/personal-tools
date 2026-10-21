@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO.Pipes;
 
 if (args.Contains("--fixture")) { Thread.Sleep(2500); return; }
+if (args.Contains("--fixture-long")) { Thread.Sleep(6000); return; }
 if (args.Contains("--display-power-fixture")) { DisplayPowerChecks.HoldDisplay(); return; }
 if (args.Contains("--live-power")) { await DisplayPowerChecks.CheckInstalledAsync(); return; }
 if (args.Contains("--live-app")) { await LiveChecks.RunAsync(); return; }
@@ -220,6 +221,144 @@ Test("HDR and display power widgets are independent definitions", () =>
     Check(power.RootElement.GetProperty("body")[1].GetProperty("text").GetString() == "[PROCESS] chrome.exe\nVideo Wake Lock", "process name hidden by long path");
     Check(power.RootElement.GetProperty("actions").EnumerateArray().All(a => a.GetProperty("verb").GetString() == "refresh"), "power widget includes HDR controls");
 });
+string fixtures = Path.Combine(AppContext.BaseDirectory, "Fixtures");
+string Fixture(string name) => File.ReadAllText(Path.Combine(fixtures, name));
+var deltaForce = new HdrGame("steam:2507950", "Delta Force", "Steam", @"D:\Steam\steamapps\common\Delta Force");
+Test("Steam library folders, current and pre-2021 formats", () =>
+{
+    var libraries = HdrGameScanner.SteamLibraries(Fixture("libraryfolders.vdf"));
+    Check(libraries.SequenceEqual([@"D:\Program Files (x86)\Steam", @"E:\SteamLibrary"]), "libraries: " + string.Join(" | ", libraries));
+    Check(HdrGameScanner.SteamLibraries(Fixture("libraryfolders-legacy.vdf")).SequenceEqual([@"E:\SteamLibrary"]), "legacy format");
+    var folders = (Dictionary<string, object>)HdrGameScanner.ParseVdf(Fixture("libraryfolders.vdf"))["libraryfolders"];
+    Check(((Dictionary<string, object>)folders["1"])["label"] as string == "Games \"SSD\"", "escaped quote");
+    foreach (string broken in new[] { "\"a\" {", "\"a\" \"b", "}", "\"a\"" })
+    {
+        bool rejected = false;
+        try { HdrGameScanner.ParseVdf(broken); } catch (FormatException) { rejected = true; }
+        Check(rejected, "accepted broken VDF: " + broken);
+    }
+});
+Test("Steam manifests: name, install folder, UTF-8", () =>
+{
+    Check(HdrGameScanner.ParseSteamManifest(Fixture("appmanifest_1888930.acf")) is { AppId: "1888930", Name: "The Last of Us™ Part I", InstallDir: "The Last of Us Part I" }, "manifest");
+    Check(HdrGameScanner.ParseSteamManifest(Fixture("appmanifest_2507950.acf")) is { AppId: "2507950", InstallDir: "Delta Force" }, "nested blocks");
+    Check(HdrGameScanner.ParseSteamManifest("\"AppState\" { \"appid\" \"1\" }") is null, "manifest without installdir accepted");
+});
+Test("Epic manifests keep finished base games only", () =>
+{
+    Check(HdrGameScanner.ParseEpicManifest(Fixture("epic-game.item")) is { Name: "Alan Wake 2", Source: "Epic", Folder: @"C:\Program Files\Epic Games\AlanWake2",
+        Icon: @"C:\Program Files\Epic Games\AlanWake2\AlanWake2.exe" }, "game");
+    foreach (string name in new[] { "epic-engine.item", "epic-dlc.item", "epic-incomplete.item" })
+        Check(HdrGameScanner.ParseEpicManifest(Fixture(name)) is null, "listed " + name);
+});
+Test("library scan: Steam libraries, store records, store launchers excluded, Game Bar merged", () =>
+{
+    string root = Path.Combine(Path.GetTempPath(), "HdrGames-" + Guid.NewGuid().ToString("N"));
+    string Dir(params string[] parts) { string path = Path.Combine([root, .. parts]); Directory.CreateDirectory(path); return path; }
+    string Touch(params string[] parts) { string path = Path.Combine([root, .. parts]); Directory.CreateDirectory(Path.GetDirectoryName(path)!); File.WriteAllText(path, ""); return path; }
+    try
+    {
+        string steam = Dir("Steam", "steamapps"), library = Dir("Library", "steamapps");
+        File.WriteAllText(Path.Combine(steam, "libraryfolders.vdf"), "\"libraryfolders\" { \"0\" { \"path\" \"" + Path.GetDirectoryName(steam)!.Replace("\\", "\\\\")
+            + "\" } \"1\" { \"path\" \"" + Path.GetDirectoryName(library)!.Replace("\\", "\\\\") + "\" } }");
+        foreach (string name in new[] { "appmanifest_2507950.acf", "appmanifest_228980.acf" }) File.Copy(Path.Combine(fixtures, name), Path.Combine(steam, name));
+        File.Copy(Path.Combine(fixtures, "appmanifest_1888930.acf"), Path.Combine(library, "appmanifest_1888930.acf"));
+        string delta = Dir("Steam", "steamapps", "common", "Delta Force");
+        Dir("Steam", "steamapps", "common", "Steamworks Shared");
+        string tlou = Dir("Library", "steamapps", "common", "The Last of Us Part I");
+        string launcherExe = Touch("Steam", "steamapps", "common", "Delta Force", "Launcher", "df_launcher.exe");
+        // Ubisoft Connect keeps its games under its own folder; the EA app folder holds the store launcher.
+        string ubisoft = Dir("Ubisoft");
+        Touch("Ubisoft", "upc.exe");
+        string anno = Dir("Ubisoft", "games", "Anno 1800");
+        string ea = Dir("EA Desktop");
+        Touch("EA Desktop", "EA Desktop", "EADesktop.exe");
+        string vanguard = Dir("Riot Vanguard");
+        string manifests = Dir("Epic", "Manifests"), alan = Dir("Epic Games", "AlanWake2");
+        File.WriteAllText(Path.Combine(manifests, "dill.item"), Fixture("epic-game.item").Replace(@"C:\\Program Files\\Epic Games\\AlanWake2", alan.Replace("\\", "\\\\")));
+        Dir("XboxGames", "Forza Horizon 5", "Content");
+        Dir("XboxGames", "GameSave");
+        string witcher = Dir("GOG", "The Witcher 3");
+        string indie = Touch("Indie", "Game", "indie.exe");
+        var scanner = new HdrGameScanner
+        {
+            SteamRoot = () => Path.GetDirectoryName(steam)!.Replace('\\', '/'),
+            Uninstall = () =>
+            [
+                new("Steam App 2507950", "델타 포스", "TiMi Studio Group", delta, Path.Combine(root, "missing.ico") + ",0"),
+                new("Uplay", "Ubisoft Connect", "Ubisoft", ubisoft.Replace('\\', '/') + "/", null),
+                new("Uplay Install 4553", "Anno 1800", "Ubisoft", anno.Replace('\\', '/') + "/", null),
+                new("Uplay Install 4553", "Anno 1800", "Ubisoft", anno + "\\", null),
+                new("EA app", "EA app", "Electronic Arts", ea, null),
+                new("{0E5A0B31}", "EA Helper", "Electronic Arts", ea, null),
+                new("{5B2E2C1F}", "Bundle", "Electronic Arts", Path.Combine(root, "Epic Games"), null),
+                new("Riot Vanguard", "Riot Vanguard", "Riot Games, Inc", vanguard, null),
+                new("Notepad++", "Notepad++", "Notepad++ Team", Dir("Notepad++"), null),
+            ],
+            EpicManifests = manifests,
+            XboxRoots = () => [Path.Combine(root, "XboxGames"), Path.Combine(root, "NoXbox")],
+            Gog = () => [new("1207664663", "The Witcher 3", witcher, null), new("1", "Hearts of Stone", witcher, null, "1207664663")],
+            GameBar = () => [launcherExe, indie, Path.Combine(root, "missing.exe"), Path.Combine(ubisoft, "upc.exe")],
+        };
+        var games = scanner.Scan();
+        string List() => string.Join(", ", games.Select(g => $"{g.Key}={g.Source}:{g.Folder}"));
+        Check(games.Length == 7, "count: " + List());
+        Check(games.Single(g => g.Key == "steam:2507950") is { Name: "델타 포스", Icon: null } d && d.Folder == delta, "localized Steam entry: " + List());
+        Check(games.Any(g => g.Key == "steam:1888930" && g.Name == "The Last of Us™ Part I" && g.Folder == tlou), "second library: " + List());
+        Check(!games.Any(g => g.Key == "steam:228980"), "redistributables listed");
+        Check(games.Single(g => g.Source == "Ubisoft") is { Key: "ubisoft:4553" } u && u.Folder == anno, "Ubisoft game: " + List());
+        Check(!games.Any(g => new[] { ubisoft, ea, vanguard, Path.Combine(root, "Epic Games") }.Contains(g.Folder)), "store or container listed: " + List());
+        Check(games.Any(g => g.Source == "Epic" && g.Folder == alan) && games.Any(g => g.Source == "Xbox" && g.Name == "Forza Horizon 5"), "Epic or Xbox: " + List());
+        Check(games.Single(g => g.Source == "GOG").Folder == witcher, "GOG");
+        Check(games.Single(g => g.Source == "Windows") is { Folder: var folder } && folder == Path.GetDirectoryName(indie), "Game Bar entry: " + List());
+    }
+    finally { Directory.Delete(root, true); }
+});
+Test("folder match covers the game's own launcher, not store launchers or sibling folders", () =>
+{
+    var m = new HdrMatcher([], [deltaForce]);
+    Check(m.Find(deltaForce.Folder + @"\Launcher\df_launcher.exe")?.Game == deltaForce, "launcher in the game folder");
+    Check(m.Find(@"d:\steam\STEAMAPPS\common\delta force\Game\client.exe") is not null, "case sensitive");
+    Check(m.Find(@"D:\Steam\steamapps\common\Delta Force 2\game.exe") is null, "sibling folder with the same prefix");
+    Check(m.Find(deltaForce.Folder + @"\steamwebhelper.exe") is null, "store launcher matched");
+    Check(new HdrMatcher([], [deltaForce], [deltaForce.Key]).Find(deltaForce.Folder + @"\x.exe") is null, "switched-off game matched");
+    var nested = new HdrGame("test:tool", "Tool", "Steam", deltaForce.Folder + @"\Tools");
+    Check(new HdrMatcher([], [deltaForce, nested]).Find(nested.Folder + @"\tool.exe")?.Game == nested, "deepest folder must win");
+});
+Test("manual program inside a game folder claims the game", () =>
+{
+    string client = deltaForce.Folder + @"\Game\client.exe", launcher = deltaForce.Folder + @"\Launcher\df_launcher.exe";
+    var manual = new HdrProgram(Guid.NewGuid(), "델타포스", client);
+    var claimed = new HdrMatcher([manual], [deltaForce], [deltaForce.Key]);
+    Check(claimed.Find(launcher) is { Program: null, Game: { } g } && g == deltaForce, "manual on did not cover the game's launcher");
+    Check(claimed.Find(client) is { Program: { } p } && p.Id == manual.Id, "exact match lost");
+    var off = new HdrMatcher([manual with { Enabled = false }], [deltaForce]);
+    Check(off.Find(launcher) is null && off.Find(client) is null, "manual off did not switch the game off");
+    Check(HdrMatcher.Claim(deltaForce, [manual])?.Id == manual.Id && HdrMatcher.Claim(deltaForce, [game]) is null, "claim");
+    var gamesOff = new HdrMatcher([manual], []);
+    Check(gamesOff.Find(launcher) is null && gamesOff.Find(client) is not null, "folder matched with games switched off");
+});
+Test("launcher before game hands over without a restore", () =>
+{
+    var d = new Displays(); var a = new HdrAutomation(d, new Journal());
+    var m = new HdrMatcher([], [deltaForce]);
+    var launcher = new HdrProcess("20:1", deltaForce.Folder + @"\Launcher\df_launcher.exe");
+    var client = new HdrProcess("21:2", deltaForce.Folder + @"\Game\client.exe");
+    a.Reconcile([launcher], m); Check(d.On, "launcher did not turn HDR on");
+    a.Reconcile([launcher, client], m); a.Reconcile([client], m);
+    Check(d.On && d.Writes == 1, "restored between launcher and game");
+    Check(a.Sessions.Single().Owners.SequenceEqual(["21:2"]), "ownership not handed to the game");
+    a.Reconcile([], m); Check(!d.On && d.Writes == 2, "not restored after the game");
+    a.Reconcile([new("22:3", @"C:\Steam\steam.exe")], new HdrMatcher([], [deltaForce with { Folder = @"C:\Steam" }]));
+    Check(!d.On, "store launcher started a session");
+});
+Test("settings written before game detection keep defaults", () =>
+{
+    var old = JsonSerializer.Deserialize<HdrSettings>("{\"Enabled\":false}")!;
+    Check(old is { Enabled: false, Games: true, DisabledGames: null }, "old settings.json lost defaults");
+    var round = JsonSerializer.Deserialize<HdrSettings>(JsonSerializer.Serialize(new HdrSettings(true, false, ["steam:1"])))!;
+    Check(round is { Games: false, DisabledGames: ["steam:1"] }, "round trip");
+});
 Console.WriteLine($"{passed} tests passed.");
 
 if (args.Contains("--integration"))
@@ -231,7 +370,7 @@ if (args.Contains("--integration"))
     var store = new ProgramStore([new(Guid.NewGuid(), "Fixture", exe)]);
     string testPipe = HdrWire.PipeName + ".test." + Guid.NewGuid().ToString("N");
     var settings = new SettingsStore();
-    await using var controller = new HdrController(d, new Journal(), store, testPipe, settings);
+    await using var controller = new HdrController(d, new Journal(), store, testPipe, settings, () => []);
     controller.Start();
     await Task.Delay(1000);
     // The parent uses the same executable. Register a copied apphost, which loads the same DLL.
@@ -280,6 +419,89 @@ if (args.Contains("--integration"))
     Check(!d.On, "restore after re-enabling failed");
     File.Delete(childExe);
     Console.WriteLine("PASS master switch releases, blocks and re-applies");
+
+    async Task Until(Func<bool> condition, string what)
+    {
+        var clock = Stopwatch.StartNew();
+        while (!condition()) { if (clock.Elapsed > TimeSpan.FromSeconds(8)) throw new Exception(what); await Task.Delay(50); }
+    }
+    Process Run(string exe, string argument) => Process.Start(new ProcessStartInfo(exe, argument) { UseShellExecute = false, CreateNoWindow = true })!;
+    // A detected game folder with a full copy of this test app: its own launcher turns HDR on before the game starts.
+    string gameDir = Path.Combine(AppContext.BaseDirectory, "GameFixture");
+    foreach (string file in Directory.EnumerateFiles(AppContext.BaseDirectory, "*", SearchOption.AllDirectories).Where(f => !HdrGameScanner.Under(f, gameDir)))
+    {
+        string target = Path.Combine(gameDir, Path.GetRelativePath(AppContext.BaseDirectory, file));
+        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+        File.Copy(file, target, true);
+    }
+    string launcherExe = Path.Combine(gameDir, "FixtureLauncher.exe"), gameExe = Path.Combine(gameDir, "FixtureGame.exe");
+    File.Copy(Path.Combine(gameDir, "HdrTests.exe"), launcherExe, true);
+    File.Copy(Path.Combine(gameDir, "HdrTests.exe"), gameExe, true);
+    var fixtureGame = new HdrGame("test:fixture", "Fixture Game", "Steam", HdrGameScanner.Normalize(gameDir));
+    var gameDisplay = new Displays();
+    var gameSettings = new SettingsStore();
+    await using (var games = new HdrController(gameDisplay, new Journal(), new ProgramStore([]), testPipe + ".games", gameSettings, () => [fixtureGame]))
+    {
+        games.Start();
+        await Until(() => games.Snapshot.Games is [_], "detected games not published");
+        using (var launcher = Run(launcherExe, "--fixture"))
+        {
+            await Until(() => gameDisplay.On, "game launcher did not turn HDR on: " + games.Snapshot.Error);
+            Check(games.Snapshot.Games is [{ Running: true, RunningExe: "FixtureLauncher.exe" }], "launcher not shown on the game row");
+            Check(games.Snapshot.Active is [{ Programs: ["Fixture Game"] }], "session does not name the game");
+            using var client = Run(gameExe, "--fixture-long");
+            await launcher.WaitForExitAsync();
+            await Task.Delay(1500);
+            Check(gameDisplay.On && gameDisplay.Writes == 1, "restored when the launcher exited");
+            await games.SetGameEnabledAsync(fixtureGame.Key, false);
+            Check(!gameDisplay.On && gameSettings.Saved?.DisabledGames is ["test:fixture"], "per-game switch did not release");
+            await games.SetGameEnabledAsync(fixtureGame.Key, true);
+            Check(gameDisplay.On, "per-game switch did not re-apply to the running game");
+            await client.WaitForExitAsync();
+        }
+        await Until(() => !gameDisplay.On, "not restored after the game exited");
+        await games.SetGamesEnabledAsync(false);
+        using (var again = Run(launcherExe, "--fixture"))
+        {
+            await Task.Delay(1500);
+            Check(!gameDisplay.On && games.Snapshot is { GamesEnabled: false, Games: [{ Running: false }] }, "folder matched with installed games switched off");
+            await again.WaitForExitAsync();
+        }
+    }
+    for (int attempt = 0; Directory.Exists(gameDir); attempt++)
+    {
+        try { Directory.Delete(gameDir, true); }
+        catch (Exception) when (attempt < 20) { await Task.Delay(250); }
+    }
+    Console.WriteLine("PASS game folder: launcher before game, hand-over, per-game and installed-games switches");
+
+    var clock = Stopwatch.StartNew();
+    int described = 0;
+    foreach (var each in Process.GetProcesses()) using (each) if (HdrController.Describe(each.Id) is not null) described++;
+    Console.WriteLine($"INFO describing all {described} processes once took {clock.ElapsedMilliseconds} ms; later ticks only describe new processes");
+    clock.Restart();
+    var found = new HdrGameScanner().Scan();
+    clock.Stop();
+    Check(found.All(g => Directory.Exists(g.Folder)), "detected a missing folder");
+    Check(!found.Any(g => Directory.EnumerateFiles(g.Folder, "*.exe").Any(f => HdrGameScanner.Launchers.Contains(Path.GetFileName(f)))), "detected a store launcher folder");
+    Console.WriteLine($"PASS this PC's libraries ({clock.ElapsedMilliseconds} ms): " + string.Join(", ", found.Select(g => $"{g.Name} [{g.Source}]")));
+
+    // Polling cost with this PC's libraries, where every process in the session is a candidate, against the
+    // registered-names-only polling of earlier builds. The display stays fake.
+    foreach (bool withGames in new[] { false, true })
+    {
+        await using var real = new HdrController(new Displays(), new Journal(), new ProgramStore([]), testPipe + ".cpu" + withGames, new SettingsStore(),
+            withGames ? null : () => []);
+        real.Start();
+        await Until(() => real.Snapshot.GamesScannedAt is not null, "libraries not scanned");
+        await Task.Delay(2000);
+        using var self = Process.GetCurrentProcess();
+        var before = self.TotalProcessorTime;
+        clock.Restart();
+        await Task.Delay(10000);
+        self.Refresh();
+        Console.WriteLine($"INFO polling with {real.Snapshot.Games?.Length} detected games: {(self.TotalProcessorTime - before).TotalMilliseconds / clock.Elapsed.TotalMilliseconds * 100:N2}% of one core");
+    }
 }
 
 sealed class Displays : IHdrDisplay

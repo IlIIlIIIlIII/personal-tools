@@ -1,0 +1,10 @@
+{
+	"FormatVersion": 0,
+	"bIsIncompleteInstall": false,
+	"LaunchExecutable": "",
+	"AppCategories": [ "public", "games", "addons" ],
+	"DisplayName": "Alan Wake 2: Night Springs",
+	"InstallLocation": "C:\\Program Files\\Epic Games\\AlanWake2",
+	"AppName": "DillNightSprings",
+	"MainGameAppName": "Dill"
+}

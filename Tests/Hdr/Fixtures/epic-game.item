@@ -1,0 +1,18 @@
+{
+	"FormatVersion": 0,
+	"bIsIncompleteInstall": false,
+	"LaunchCommand": "",
+	"LaunchExecutable": "AlanWake2.exe",
+	"ManifestLocation": "C:\\Program Files\\Epic Games\\AlanWake2/.egstore",
+	"bIsApplication": true,
+	"bIsExecutable": true,
+	"AppCategories": [ "public", "games", "applications" ],
+	"DisplayName": "Alan Wake 2",
+	"InstallLocation": "C:\\Program Files\\Epic Games\\AlanWake2",
+	"MandatoryAppFolderName": "AlanWake2",
+	"CatalogNamespace": "dc9d2e595d0e4650b35d659f90d41059",
+	"AppName": "Dill",
+	"AppVersionString": "1.0.16.1",
+	"MainGameCatalogNamespace": "dc9d2e595d0e4650b35d659f90d41059",
+	"MainGameAppName": "Dill"
+}

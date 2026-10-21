@@ -10,6 +10,8 @@
     <Compile Include="../../Sources/Windows/WinUI/HdrController.cs" Link="HdrController.cs"/>
     <Compile Include="../../Sources/Windows/WinUI/HdrModels.cs" Link="HdrModels.cs"/>
     <Compile Include="../../Sources/Windows/WinUI/HdrAutomation.cs" Link="HdrAutomation.cs"/>
+    <Compile Include="../../Sources/Windows/WinUI/HdrGames.cs" Link="HdrGames.cs"/>
+    <None Include="Fixtures/**" CopyToOutputDirectory="PreserveNewest"/>
     <Compile Include="../../Sources/Windows/WinUI/HdrDisplay.cs" Link="HdrDisplay.cs"/>
     <Compile Include="../../Sources/Windows/WinUI/HdrWire.cs" Link="HdrWire.cs"/>
     <Compile Include="../../Sources/Windows/HdrWidget/WidgetCard.cs" Link="WidgetCard.cs"/>

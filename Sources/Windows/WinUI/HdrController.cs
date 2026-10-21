@@ -1,20 +1,18 @@
 using System.Diagnostics;
 using System.IO.Pipes;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading.Channels;
 using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
 
 namespace PersonalTools;
 
 internal sealed class HdrController : IAsyncDisposable
 {
-    // Launchers stay open for the whole session, so registering one would keep HDR on all day.
-    private static readonly HashSet<string> Launchers = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "steam.exe", "steamwebhelper.exe", "EpicGamesLauncher.exe", "EpicWebHelper.exe", "Battle.net.exe", "EADesktop.exe", "Origin.exe",
-        "GalaxyClient.exe", "upc.exe", "UbisoftConnect.exe", "RiotClientServices.exe", "RiotClientUx.exe", "XboxPcApp.exe",
-        "Playnite.DesktopApp.exe", "Playnite.FullscreenApp.exe",
-    };
+    // Libraries change only when a game is installed or removed; process polling stays at 1 s.
+    private static readonly TimeSpan GameRescan = TimeSpan.FromMinutes(5);
+    private static readonly int Session = Process.GetCurrentProcess().SessionId;
     private readonly SemaphoreSlim gate = new(1);
     private readonly CancellationTokenSource stop = new();
     private readonly Channel<bool> signals = Channel.CreateBounded<bool>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropWrite });
@@ -23,23 +21,29 @@ internal sealed class HdrController : IAsyncDisposable
     private readonly IHdrProgramStore programStore;
     private readonly IHdrSettingsStore settingsStore;
     private readonly string pipeName;
-    private readonly Dictionary<int, HdrProcess> processCache = [];
+    private readonly Func<HdrGame[]> scanGames;
+    // Process id → executable, so each process is opened once instead of every second.
+    private readonly Dictionary<int, (string Name, HdrProcess? Item, DateTime Retry)> processCache = [];
     private HdrAutomation? automation;
     private List<HdrProgram> programs = [];
     private HdrSettings settings = new();
+    private HdrGame[] games = [];
+    private DateTimeOffset gamesDue;
+    private DateTimeOffset? gamesScannedAt;
     private Task? worker, ticker, server;
     private string? startupError;
     private volatile bool closing;
     public HdrSnapshot Snapshot { get; private set; } = new([], [], null);
     public event Action<HdrSnapshot>? Changed;
     internal HdrController(IHdrDisplay? display = null, IHdrJournal? journal = null, IHdrProgramStore? programStore = null, string? pipeName = null,
-        IHdrSettingsStore? settingsStore = null)
+        IHdrSettingsStore? settingsStore = null, Func<HdrGame[]>? scanGames = null)
     {
         this.display = display ?? new HdrDisplay();
         this.journal = journal ?? new HdrJournal();
         this.programStore = programStore ?? new HdrProgramStore();
         this.settingsStore = settingsStore ?? new HdrSettingsStore();
         this.pipeName = pipeName ?? HdrWire.PipeName;
+        this.scanGames = scanGames ?? new HdrGameScanner().Scan;
     }
     public static void RegisterWidgetApp()
     {
@@ -86,13 +90,22 @@ internal sealed class HdrController : IAsyncDisposable
         server = Task.Run(ServeAsync);
     }
 
-    internal static HdrProcess? Describe(Process process)
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern SafeProcessHandle OpenProcess(uint access, bool inherit, int id);
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "QueryFullProcessImageNameW")]
+    private static extern bool QueryFullProcessImageName(SafeProcessHandle process, int flags, char[] name, ref int size);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool GetProcessTimes(SafeProcessHandle process, out long creation, out long exit, out long kernel, out long user);
+    // Limited query rights also work for elevated games and most anti-cheat protected ones, unlike MainModule.
+    // The key keeps the "<pid>:<UTC start ticks>" form of earlier builds so a journal they wrote still matches.
+    internal static HdrProcess? Describe(int id)
     {
-        try
-        {
-            string? path = process.MainModule?.FileName;
-            return path is null ? null : new($"{process.Id}:{process.StartTime.ToUniversalTime().Ticks}", Path.GetFullPath(path));
-        }
+        using var process = OpenProcess(0x1000, false, id); // PROCESS_QUERY_LIMITED_INFORMATION
+        if (process.IsInvalid) return null;
+        var name = new char[1024];
+        int size = name.Length;
+        if (!QueryFullProcessImageName(process, 0, name, ref size) || !GetProcessTimes(process, out long created, out _, out _, out _)) return null;
+        try { return new($"{id}:{DateTime.FromFileTimeUtc(created).Ticks}", Path.GetFullPath(new string(name, 0, size))); }
         catch { return null; }
     }
     // Programs with a window (games, players), not background services or Windows itself.
@@ -107,8 +120,8 @@ internal sealed class HdrController : IAsyncDisposable
                 try
                 {
                     if (process.Id == Environment.ProcessId || process.MainWindowHandle == IntPtr.Zero) continue;
-                    if (Describe(process) is not { } item || item.Path.StartsWith(windows, StringComparison.OrdinalIgnoreCase)) continue;
-                    result.Add(new(DisplayName(item.Path), item.Path, Launchers.Contains(Path.GetFileName(item.Path))));
+                    if (Describe(process.Id) is not { } item || item.Path.StartsWith(windows, StringComparison.OrdinalIgnoreCase)) continue;
+                    result.Add(new(DisplayName(item.Path), item.Path, HdrGameScanner.Launchers.Contains(Path.GetFileName(item.Path))));
                 }
                 catch { }
             }
@@ -126,46 +139,98 @@ internal sealed class HdrController : IAsyncDisposable
         catch { }
         return Path.GetFileNameWithoutExtension(path);
     }
-    private HdrProcess[] Scan()
+    // With detected games every process is a candidate (anything under a game folder counts), else only the
+    // registered names. Other sessions' processes, such as services, never start a game for this user.
+    private HdrProcess[] Scan(bool everyProcess)
     {
         var alive = new HashSet<int>();
+        var result = new List<HdrProcess>();
         var names = programs.Where(p => p.Enabled).Select(p => Path.GetFileNameWithoutExtension(p.Path)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var now = DateTime.UtcNow;
         foreach (var process in Process.GetProcesses())
         {
             using (process)
             {
-                alive.Add(process.Id);
                 try
                 {
-                    if (!names.Contains(process.ProcessName)) { processCache.Remove(process.Id); continue; }
-                    var item = Describe(process);
-                    if (item is not null) processCache[process.Id] = item;
-                    // Keep a known live process on a temporary access failure, avoiding early restore.
+                    int id = process.Id;
+                    string name = process.ProcessName;
+                    if (process.SessionId != Session || !everyProcess && !names.Contains(name)) continue;
+                    alive.Add(id);
+                    // A known process keeps its entry, so a temporary access failure cannot restore early.
+                    if (!processCache.TryGetValue(id, out var cached) || cached.Name != name || cached.Item is null && now >= cached.Retry)
+                        processCache[id] = cached = (name, Describe(id), now.AddSeconds(5));
+                    if (cached.Item is { } item) result.Add(item);
                 }
                 catch (InvalidOperationException) { }
             }
         }
         foreach (int pid in processCache.Keys.Where(pid => !alive.Contains(pid)).ToArray()) processCache.Remove(pid);
-        return processCache.Values.ToArray();
+        return result.ToArray();
     }
     private void Refresh()
     {
-        var processes = Scan();
-        // Switched off, automation sees no programs: pending sessions restore and nothing new starts.
-        if (startupError is null) automation?.Reconcile(processes, settings.Enabled ? programs : []);
+        if (DateTimeOffset.Now >= gamesDue) RescanGames();
+        var detected = settings.Games ? games : [];
+        var matcher = new HdrMatcher(programs, detected, settings.DisabledGames);
+        var processes = Scan(detected.Length > 0);
+        var hits = processes.Select(p => (Process: p, Hit: matcher.Find(p.Path))).Where(x => x.Hit is not null).ToArray();
+        // Switched off, automation matches nothing: pending sessions restore and nothing new starts.
+        if (startupError is null) automation?.Reconcile(processes, settings.Enabled ? matcher : new HdrMatcher([]));
         string NameOf(string key)
         {
-            string? path = processes.FirstOrDefault(p => p.Key == key)?.Path;
-            return programs.FirstOrDefault(p => string.Equals(p.Path, path, StringComparison.OrdinalIgnoreCase))?.Name
-                ?? (path is null ? "프로그램" : Path.GetFileNameWithoutExtension(path));
+            var (process, hit) = hits.FirstOrDefault(x => x.Process.Key == key);
+            return hit?.Game?.Name ?? hit?.Program?.Name ?? (process is null ? "프로그램" : Path.GetFileNameWithoutExtension(process.Path));
         }
         var active = automation?.Sessions.Select(s => new HdrActive(s.MonitorId, s.Original, s.Manual, s.StartedAt, s.Owners.Select(NameOf).Distinct().ToArray())).ToArray() ?? [];
-        Publish(new(display.Read(), programs.Select(p => new HdrProgramStatus(p, processes.Any(x => string.Equals(x.Path, p.Path, StringComparison.OrdinalIgnoreCase)))).ToArray(),
-            startupError ?? automation?.Error, null, Enabled: settings.Enabled, Active: active));
+        var off = (settings.DisabledGames ?? []).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var gameStatus = games.Select(game =>
+        {
+            var claim = HdrMatcher.Claim(game, programs);
+            var running = hits.Where(x => x.Hit!.Game?.Key == game.Key).Select(x => x.Process).OrderBy(Started).ToArray();
+            string? exe = running.Length == 0 ? null : Path.GetFileName(running[0].Path) + (running.Length > 1 ? $" 외 {running.Length - 1}개" : "");
+            return new HdrGameStatus(game, claim?.Enabled ?? !off.Contains(game.Key), running.Length > 0, exe, claim?.Name);
+        }).ToArray();
+        // A program that claims a game also runs while only the game's launcher does.
+        var programStatus = programs.Select(p => new HdrProgramStatus(p, hits.Any(x => x.Hit!.Program?.Id == p.Id
+            || x.Hit.Game is { } game && HdrMatcher.Claim(game, programs)?.Id == p.Id))).ToArray();
+        Publish(new(display.Read(), programStatus, startupError ?? automation?.Error, null, Enabled: settings.Enabled, Active: active,
+            GamesEnabled: settings.Games, Games: gameStatus, GamesScannedAt: gamesScannedAt));
+    }
+    private static long Started(HdrProcess process) => long.TryParse(process.Key[(process.Key.IndexOf(':') + 1)..], out long ticks) ? ticks : 0;
+    private void RescanGames()
+    {
+        // A failed scan keeps the previous list instead of dropping every game for five minutes. The invariant order
+        // lists Latin names before Hangul like Windows' own app lists; ICU's Korean order puts Hangul first.
+        try
+        {
+            games = scanGames().OrderBy(g => g.Name, StringComparer.InvariantCultureIgnoreCase).ToArray();
+            gamesScannedAt = DateTimeOffset.Now;
+        }
+        catch { }
+        gamesDue = DateTimeOffset.Now + GameRescan;
     }
     private void Publish(HdrSnapshot snapshot) { Snapshot = snapshot; Changed?.Invoke(Snapshot); }
 
-    public async Task SetEnabledAsync(bool enabled)
+    public Task SetEnabledAsync(bool enabled) => UpdateSettingsAsync(s => s with { Enabled = enabled });
+    public Task SetGamesEnabledAsync(bool enabled) => UpdateSettingsAsync(s => s with { Games = enabled });
+    public Task SetGameEnabledAsync(string key, bool enabled) => UpdateSettingsAsync(s =>
+    {
+        var off = (s.DisabledGames ?? []).Where(k => !string.Equals(k, key, StringComparison.OrdinalIgnoreCase));
+        return s with { DisabledGames = (enabled ? off : off.Append(key)).ToArray() };
+    });
+    public async Task RescanGamesAsync()
+    {
+        await gate.WaitAsync();
+        try
+        {
+            if (closing) return;
+            gamesDue = default;
+            Refresh();
+        }
+        finally { gate.Release(); }
+    }
+    private async Task UpdateSettingsAsync(Func<HdrSettings, HdrSettings> change)
     {
         await gate.WaitAsync();
         try
@@ -173,7 +238,7 @@ internal sealed class HdrController : IAsyncDisposable
             if (closing) return;
             if (automation is null) throw new IOException("HDR 서비스를 시작하고 있습니다. 다시 시도하세요.");
             if (startupError is not null) throw new IOException(startupError);
-            var next = settings with { Enabled = enabled };
+            var next = change(settings);
             settingsStore.Save(next);
             settings = next;
             Refresh();

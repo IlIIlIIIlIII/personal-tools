@@ -16,11 +16,13 @@ public sealed class HdrAutomation
         sessions = journal.Load(); // A corrupt journal must never silently discard a pending restore.
     }
 
-    public void Reconcile(IReadOnlyCollection<HdrProcess> processes, IReadOnlyCollection<HdrProgram> programs)
+    public void Reconcile(IReadOnlyCollection<HdrProcess> processes, IReadOnlyCollection<HdrProgram> programs) => Reconcile(processes, new HdrMatcher(programs));
+
+    // Every matching process owns the session on its own, so a game's launcher and the game hand over without a restore.
+    public void Reconcile(IReadOnlyCollection<HdrProcess> processes, HdrMatcher matcher)
     {
         Error = null;
-        var paths = programs.Where(p => p.Enabled).Select(p => p.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var active = processes.Where(p => paths.Contains(p.Path)).Select(p => p.Key).ToHashSet();
+        var active = processes.Where(p => matcher.Find(p.Path) is not null).Select(p => p.Key).ToHashSet();
         var monitors = display.Read();
         foreach (var session in sessions.ToArray())
         {

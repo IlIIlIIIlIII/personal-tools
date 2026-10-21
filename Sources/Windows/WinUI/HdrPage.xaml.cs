@@ -2,22 +2,27 @@ using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using System.Text.Json;
+using Windows.Storage;
+using Windows.Storage.FileProperties;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
 
 namespace PersonalTools;
 
-// Auto-HDR page (design canvas https://claude.ai/artifact/6HEp13fuWcEHtSj3sYAcNK).
+// Auto-HDR page (design canvas https://claude.ai/artifact/6HEp13fuWcEHtSj3sYAcNK; installed games: boards 07–11).
 public sealed partial class HdrPage : UserControl
 {
     private static readonly FontFamily Mono = new("Cascadia Mono, Consolas");
+    private static readonly Dictionary<string, Task<ImageSource?>> GameIcons = new(StringComparer.OrdinalIgnoreCase);
     private HdrController? controller;
     private Window? owner;
     private HdrSnapshot snapshot = new([], [], null);
     private string? rendered;
-    private bool updating;
+    private bool updating, gamesExpanded = true;
     public HdrPage() { InitializeComponent(); }
     private static Brush Resource(string key) => (Brush)Application.Current.Resources[key];
     private static Style StyleOf(string key) => (Style)Application.Current.Resources[key];
@@ -41,7 +46,12 @@ public sealed partial class HdrPage : UserControl
         bool ready = value.Active is not null;
         var active = value.Active ?? [];
         var primary = value.Monitors.FirstOrDefault(m => m.Primary);
-        string running = string.Join(", ", value.Programs.Where(p => p.Running && p.Program.Enabled).Select(p => p.Program.Name));
+        var games = value.Games ?? [];
+        bool gamesApply = value.GamesEnabled && games.Length > 0;
+        // A program that claims a running game is that game, so list the game's name once.
+        var runningGames = games.Where(g => g.Running && g.Enabled && value.GamesEnabled).ToArray();
+        string running = string.Join(", ", runningGames.Select(g => g.Game.Name).Concat(value.Programs
+            .Where(p => p.Running && p.Program.Enabled && !runningGames.Any(g => g.ClaimedBy == p.Program.Name)).Select(p => p.Program.Name)).Distinct());
         updating = true;
 
         string owners = string.Join(", ", active.SelectMany(a => a.Programs).Distinct());
@@ -50,7 +60,7 @@ public sealed partial class HdrPage : UserControl
             : value.Error is not null ? ("warn", "확인 필요")
             : !value.Enabled ? ("", "꺼짐")
             : active.Length > 0 ? hdrOn ? ("ok", "HDR 켬 · " + owners) : ("", owners + " 실행 중")
-            : value.Programs.Length == 0 ? ("", "프로그램 없음")
+            : value.Programs.Length == 0 && !gamesApply ? ("", "프로그램 없음")
             : ("", "대기 중");
         StateDot.Fill = Resource(tone switch { "ok" => "SystemFillColorSuccessBrush", "warn" => "SystemFillColorCautionBrush", _ => "TextFillColorTertiaryBrush" });
         StateText.Text = text;
@@ -83,11 +93,35 @@ public sealed partial class HdrPage : UserControl
             MonitorSwitch.IsEnabled = usable;
         }
 
+        GamesSwitch.IsOn = value.GamesEnabled;
+        GamesSwitch.IsEnabled = ready;
+        GamesDetail.Text = value.GamesEnabled ? "Steam, Ubisoft 같은 라이브러리에 설치한 게임과 Windows가 게임으로 인식한 프로그램에 적용합니다."
+            : "꺼져 있어 직접 등록한 프로그램에만 적용합니다." + (games.Length > 0 ? $" 게임 {games.Length}개를 찾았습니다." : "");
+        int runningCount = games.Count(g => g.Running);
+        GamesSummary.Text = value.GamesScannedAt is not { } scanned ? "게임 목록을 확인하고 있습니다."
+            : runningCount > 0 ? $"게임 {games.Length}개 감지 · {runningCount}개 실행 중"
+            : $"게임 {games.Length}개 감지 · {scanned.ToLocalTime():HH:mm}에 확인";
+        bool none = games.Length == 0 && value.GamesScannedAt is not null;
+        GamesMeta.Visibility = none ? Visibility.Collapsed : Visibility.Visible;
+        GamesEmpty.Visibility = none ? Visibility.Visible : Visibility.Collapsed;
+        GamesList.Children.Clear();
+        // Running games first; the controller already sorts by name.
+        foreach (var game in games.OrderByDescending(g => g.Running)) GamesList.Children.Add(GameRow(game, value.GamesEnabled));
+        ShowGames();
+
         Programs.Children.Clear();
         foreach (var item in value.Programs) Programs.Children.Add(ProgramRow(item));
-        AddButton.Visibility = value.Programs.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-        EmptyState.Visibility = ready && value.Programs.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+        AddButton.Visibility = value.Programs.Length > 0 || gamesApply ? Visibility.Visible : Visibility.Collapsed;
+        ManualHint.Visibility = ready && value.Programs.Length == 0 && gamesApply ? Visibility.Visible : Visibility.Collapsed;
+        EmptyState.Visibility = ready && value.Programs.Length == 0 && !gamesApply ? Visibility.Visible : Visibility.Collapsed;
         updating = false;
+    }
+    private void ShowGames()
+    {
+        GamesBody.Visibility = gamesExpanded ? Visibility.Visible : Visibility.Collapsed;
+        GamesHeader.CornerRadius = gamesExpanded ? new CornerRadius(4, 4, 0, 0) : new CornerRadius(4);
+        GamesChevron.Glyph = gamesExpanded ? "" : "";
+        AutomationProperties.SetName(GamesExpand, gamesExpanded ? "감지한 게임 접기" : "감지한 게임 펼치기");
     }
 
     private static string Describe(HdrMonitor monitor, HdrActive? session, string running)
@@ -185,6 +219,100 @@ public sealed partial class HdrPage : UserControl
         Grid.SetColumn(actions, 2);
         grid.Children.Add(actions);
         return new Border { Style = StyleOf("SettingCard"), Child = grid };
+    }
+
+    private Border GameRow(HdrGameStatus item, bool gamesOn)
+    {
+        var game = item.Game;
+        var grid = new Grid { ColumnSpacing = 14 };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition());
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.Children.Add(GameIcon(game.Icon, 24));
+
+        var text = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
+        text.Children.Add(new TextBlock { Text = game.Name, TextTrimming = TextTrimming.CharacterEllipsis });
+        var detail = new TextBlock { Style = StyleOf("CardDescription"), TextWrapping = TextWrapping.NoWrap, TextTrimming = TextTrimming.CharacterEllipsis };
+        string source = game.Source == "Windows" ? "Windows가 게임으로 인식" : game.Source + "에서 감지";
+        if (item.Running && item.RunningExe is { } exe)
+        {
+            detail.Inlines.Add(new Run { Text = source + " · " });
+            detail.Inlines.Add(new Run { Text = exe, FontFamily = Mono });
+            detail.Inlines.Add(new Run { Text = " 실행 중" });
+        }
+        else detail.Text = item.ClaimedBy is { } owner ? $"{source} · 직접 등록한 ‘{owner}’ 설정을 따릅니다" : source;
+        text.Children.Add(detail);
+        ToolTipService.SetToolTip(text, game.Folder);
+        Grid.SetColumn(text, 1);
+        grid.Children.Add(text);
+
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12, VerticalAlignment = VerticalAlignment.Center };
+        if (item.Running) actions.Children.Add(Badge("실행 중", "ok"));
+        else if (item.Enabled && gamesOn && item.ClaimedBy is null)
+            actions.Children.Add(new TextBlock { Text = "대기", FontSize = 13, Foreground = Resource("TextFillColorSecondaryBrush"), VerticalAlignment = VerticalAlignment.Center });
+        if (item.ClaimedBy is { } claim)
+        {
+            // The manual program's switch decides, so the game row has none of its own.
+            var own = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
+            own.Children.Add(new FontIcon { Glyph = "", FontSize = 14, Foreground = Resource("TextFillColorSecondaryBrush") });
+            own.Children.Add(new TextBlock { Text = "직접 등록함", FontSize = 13, Foreground = Resource("TextFillColorSecondaryBrush") });
+            ToolTipService.SetToolTip(own, $"직접 등록한 ‘{claim}’의 스위치를 따릅니다.");
+            actions.Children.Add(own);
+        }
+        else
+        {
+            var toggle = new ToggleSwitch { IsOn = item.Enabled, OnContent = "켬", OffContent = "끔", MinWidth = 0 };
+            AutomationProperties.SetName(toggle, game.Name + " 자동 적용");
+            toggle.Toggled += async (_, _) =>
+            {
+                bool value = toggle.IsOn;
+                try { await Task.Run(() => controller!.SetGameEnabledAsync(game.Key, value)); }
+                catch (Exception e) { ShowError(e); }
+            };
+            actions.Children.Add(toggle);
+        }
+        Grid.SetColumn(actions, 2);
+        grid.Children.Add(actions);
+        return new Border
+        {
+            Padding = new Thickness(52, 8, 60, 8), MinHeight = 56, BorderThickness = new Thickness(0, 1, 0, 0),
+            BorderBrush = Resource("DividerStrokeColorDefaultBrush"), Child = grid,
+        };
+    }
+
+    // Store icons are .ico files or the game's exe; the shell thumbnail renders both. Misses stay cached too,
+    // because every render rebuilds the rows.
+    private static FrameworkElement GameIcon(string? path, double size)
+    {
+        var host = new Grid { Width = size, Height = size, VerticalAlignment = VerticalAlignment.Center };
+        var fallback = new Border
+        {
+            CornerRadius = new CornerRadius(5), Background = Resource("SubtleFillColorSecondaryBrush"),
+            Child = new FontIcon { Glyph = "", FontSize = size / 2, Foreground = Resource("TextFillColorSecondaryBrush") },
+        };
+        host.Children.Add(fallback);
+        if (path is not null) _ = LoadGameIconAsync(host, fallback, path);
+        return host;
+    }
+    private static async Task LoadGameIconAsync(Grid host, Border fallback, string path)
+    {
+        if (!GameIcons.TryGetValue(path, out var task)) GameIcons[path] = task = ThumbnailAsync(path);
+        if (await task is not { } image) return;
+        host.Children.Remove(fallback);
+        host.Children.Add(new Image { Source = image, Width = host.Width, Height = host.Height });
+    }
+    private static async Task<ImageSource?> ThumbnailAsync(string path)
+    {
+        try
+        {
+            var file = await StorageFile.GetFileFromPathAsync(path);
+            using var thumbnail = await file.GetThumbnailAsync(ThumbnailMode.SingleItem, 64, ThumbnailOptions.UseCurrentScale);
+            if (thumbnail is null || thumbnail.Size == 0) return null;
+            var image = new BitmapImage();
+            await image.SetSourceAsync(thumbnail);
+            return image;
+        }
+        catch { return null; }
     }
 
     private static Grid CandidateRow(HdrCandidate candidate, bool registered)
@@ -305,6 +433,27 @@ public sealed partial class HdrPage : UserControl
         try { await Task.Run(() => controller.SetEnabledAsync(value)); }
         catch (Exception error) { ShowError(error); }
         finally { rendered = null; Render(controller.Snapshot); }
+    }
+    private async void GamesToggled(object sender, RoutedEventArgs e)
+    {
+        if (updating || controller is null) return;
+        bool value = GamesSwitch.IsOn;
+        GamesSwitch.IsEnabled = false;
+        gamesExpanded = value;
+        try { await Task.Run(() => controller.SetGamesEnabledAsync(value)); }
+        catch (Exception error) { ShowError(error); }
+        finally { rendered = null; Render(controller.Snapshot); }
+    }
+    private void GamesExpandClick(object sender, RoutedEventArgs e)
+    {
+        gamesExpanded = !gamesExpanded;
+        ShowGames();
+    }
+    private async void RescanClick(object sender, RoutedEventArgs e)
+    {
+        if (controller is null) return;
+        try { await Task.Run(controller.RescanGamesAsync); }
+        catch (Exception error) { ShowError(error); }
     }
     private async void MonitorToggled(object sender, RoutedEventArgs e)
     {

@@ -50,7 +50,7 @@ internal static class LiveChecks
             .Select(root => Path.Combine(Environment.GetFolderPath(root), root == Environment.SpecialFolder.ProgramFiles ? "" : "Programs", "PersonalTools", "ui", "PersonalToolsWindows.exe"))
             .First(File.Exists);
         var baseline = await Request(new("read"));
-        if (baseline.Programs.Any(p => p.Running)) throw new Exception("Close registered games before hardware tests.");
+        if (baseline.Programs.Any(p => p.Running) || baseline.Games?.Any(g => g.Running) == true) throw new Exception("Close registered and detected games before hardware tests.");
         var primary = baseline.Monitors.First(m => m.Primary && m.Supported && m.Error is null);
         var secondary = baseline.Monitors.FirstOrDefault(m => !m.Primary && m.Supported && m.Error is null) ?? primary;
         var native = new HdrDisplay();
