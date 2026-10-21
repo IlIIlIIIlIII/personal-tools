@@ -22,6 +22,7 @@ internal sealed class HdrController : IAsyncDisposable
     private readonly IHdrSettingsStore settingsStore;
     private readonly string pipeName;
     private readonly Func<HdrGame[]> scanGames;
+    private readonly HdrProcessList processList = new();
     // Process id → executable, so each process is opened once instead of every second.
     private readonly Dictionary<int, (string Name, HdrProcess? Item, DateTime Retry)> processCache = [];
     private HdrAutomation? automation;
@@ -146,24 +147,16 @@ internal sealed class HdrController : IAsyncDisposable
         var alive = new HashSet<int>();
         var result = new List<HdrProcess>();
         var names = programs.Where(p => p.Enabled).Select(p => Path.GetFileNameWithoutExtension(p.Path)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        bool Candidate(string name) => everyProcess || names.Contains(name);
         var now = DateTime.UtcNow;
-        foreach (var process in Process.GetProcesses())
+        foreach (var (id, name, session, _) in processList.Read(Candidate))
         {
-            using (process)
-            {
-                try
-                {
-                    int id = process.Id;
-                    string name = process.ProcessName;
-                    if (process.SessionId != Session || !everyProcess && !names.Contains(name)) continue;
-                    alive.Add(id);
-                    // A known process keeps its entry, so a temporary access failure cannot restore early.
-                    if (!processCache.TryGetValue(id, out var cached) || cached.Name != name || cached.Item is null && now >= cached.Retry)
-                        processCache[id] = cached = (name, Describe(id), now.AddSeconds(5));
-                    if (cached.Item is { } item) result.Add(item);
-                }
-                catch (InvalidOperationException) { }
-            }
+            if (session != Session || !Candidate(name)) continue;
+            alive.Add(id);
+            // A known process keeps its entry, so a temporary access failure cannot restore early.
+            if (!processCache.TryGetValue(id, out var cached) || cached.Name != name || cached.Item is null && now >= cached.Retry)
+                processCache[id] = cached = (name, Describe(id), now.AddSeconds(5));
+            if (cached.Item is { } item) result.Add(item);
         }
         foreach (int pid in processCache.Keys.Where(pid => !alive.Contains(pid)).ToArray()) processCache.Remove(pid);
         return result.ToArray();

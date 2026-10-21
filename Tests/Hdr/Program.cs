@@ -359,6 +359,23 @@ Test("settings written before game detection keep defaults", () =>
     var round = JsonSerializer.Deserialize<HdrSettings>(JsonSerializer.Serialize(new HdrSettings(true, false, ["steam:1"])))!;
     Check(round is { Games: false, DisabledGames: ["steam:1"] }, "round trip");
 });
+Test("process list matches Process.GetProcesses and reads sessions only when needed", () =>
+{
+    var list = new HdrProcessList();
+    using var self = Process.GetCurrentProcess();
+    Check(list.Read(_ => false).Single(e => e.Id == self.Id) is { Name: "HdrTests", Session: null }, "no basic list, or sessions read that nobody needed");
+    Check(list.Read(name => name == "HdrTests").Single(e => e.Id == self.Id).Session == self.SessionId, "own session");
+    using var child = Process.Start(new ProcessStartInfo(Environment.ProcessPath!, "--fixture") { UseShellExecute = false, CreateNoWindow = true })!;
+    try
+    {
+        var all = list.Read(_ => true).ToDictionary(e => e.Id);
+        Check(all[child.Id] is { Name: "HdrTests" } started && started.Session == self.SessionId, "process started between polls");
+        int same = 0;
+        foreach (var p in Process.GetProcesses()) using (p) if (all.TryGetValue(p.Id, out var e) && e.Name == p.ProcessName && e.Session == p.SessionId) same++;
+        Check(same > all.Count * 9 / 10, $"only {same} of {all.Count} match Process.GetProcesses");
+    }
+    finally { if (!child.HasExited) child.Kill(); }
+});
 Console.WriteLine($"{passed} tests passed.");
 
 if (args.Contains("--integration"))
