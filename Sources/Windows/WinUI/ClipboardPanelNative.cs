@@ -77,7 +77,10 @@ internal sealed class ClipboardPanelNative : IDisposable
     {
         // Use DWM's rounded window and themed border instead of an alpha-layered
         // window or a persistent custom region, which disable system rounding.
-        int corners = 2, darkMode = dark ? 1 : 0;
+        // Small (4 px) rounding: with the default 8 px, DWM blended the translucent
+        // XAML layer over the acrylic twice along the window diagonal on the external
+        // monitors, drawing a faint dashed line across the panel.
+        int corners = 3, darkMode = dark ? 1 : 0;
         DwmSetWindowAttribute(window, 33, ref corners, sizeof(int));
         DwmSetWindowAttribute(window, 20, ref darkMode, sizeof(int));
     }

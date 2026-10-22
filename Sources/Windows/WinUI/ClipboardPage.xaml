@@ -103,9 +103,9 @@
    </ControlTemplate></Setter.Value></Setter>
   </Style>
 
-  <!-- Quick panel. Window corners are DWM's fixed 8 px, so inner radii follow
-       inner = outer - inset: card 8, inset media 4, selection ring 12 at a 2 px gap,
-       pills 16 holding 24 px chips of 12. -->
+  <!-- Quick panel. Window corners are DWM's small 4 px (ClipboardPanelNative), and
+       inner radii follow inner = outer - inset: card 8, inset media 4, selection ring
+       12 at a 2 px gap, pills 16 holding 24 px chips of 12. -->
   <Style x:Key="PanelRoundButton" TargetType="Button">
    <Setter Property="Background" Value="Transparent"/>
    <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>

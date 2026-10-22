@@ -162,7 +162,7 @@ public sealed partial class ClipboardPage : UserControl
         // and its automatic transparency-off / high-contrast / battery-saver fallback.
         RequestedTheme = ElementTheme.Default;
         desktopAcrylic = true;
-        PanelChrome.CornerRadius = new CornerRadius(8);
+        PanelChrome.CornerRadius = new CornerRadius(4);
         UpdatePanelTint();
     }
     private void UpdatePanelTint() => PanelChrome.Background = new SolidColorBrush(appearance.GetColorValue(Windows.UI.ViewManagement.UIColorType.Accent))
