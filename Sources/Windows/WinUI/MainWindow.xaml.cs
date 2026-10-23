@@ -11,6 +11,7 @@ public sealed partial class MainWindow : Window
     private readonly AudioController audio;
     private readonly WindowSwitchController windowSwitch;
     private readonly HdrController hdr = new();
+    private readonly DisplayIdleController displayIdle = new();
     private ClipboardPopup? clipboardPopup;
     private Task? clipboardStartup;
     private TrayIcon? tray;
@@ -51,6 +52,7 @@ public sealed partial class MainWindow : Window
         SwitchPage.Configure(windowSwitch);
         SoundsPage.Configure(audio, this);
         HdrsPage.Configure(hdr, this);
+        IdlePage.Configure(displayIdle);
         BridgePage.Configure(this);
         DiagPage.Configure(audio, clipboard, windowSwitch, BridgePage);
         Navigation.SelectedItem = ClipboardNav;
@@ -62,7 +64,7 @@ public sealed partial class MainWindow : Window
             if (!quitting && tray?.Available == true) { e.Cancel = true; AppWindow.Hide(); }
             else if (!quitting) { e.Cancel = true; Quit(); }
         };
-        Closed += (_, _) => { tray?.Dispose(); audio.Dispose(); windowSwitch.Dispose(); };
+        Closed += (_, _) => { tray?.Dispose(); audio.Dispose(); windowSwitch.Dispose(); displayIdle.Dispose(); };
     }
     public void Show() { AppWindow.Show(); Activate(); }
     public void Start(bool inTray)
@@ -73,6 +75,7 @@ public sealed partial class MainWindow : Window
         audio.Start();
         windowSwitch.Start();
         hdr.Start();
+        displayIdle.Start();
         if (!inTray || tray?.Available != true) Show();
         // Start even when the window stays hidden in the tray; the page does not need to load.
         _ = BridgePage.StartBridgeAsync();
@@ -89,6 +92,8 @@ public sealed partial class MainWindow : Window
         SwitchPage.Visibility = tag == "windows" ? Visibility.Visible : Visibility.Collapsed;
         SoundsPage.Visibility = tag == "sound" ? Visibility.Visible : Visibility.Collapsed;
         HdrsPage.Visibility = tag == "hdr" ? Visibility.Visible : Visibility.Collapsed;
+        IdlePage.Visibility = tag == "display-idle" ? Visibility.Visible : Visibility.Collapsed;
+        if (tag == "display-idle") IdlePage.Shown(); else IdlePage.Hidden();
         BridgePage.Visibility = tag == "antigravity" ? Visibility.Visible : Visibility.Collapsed;
         DiagPage.Visibility = tag == "diagnostics" ? Visibility.Visible : Visibility.Collapsed;
         if (tag == "clipboard-settings") ClipSettingsPage.Load();
@@ -116,6 +121,8 @@ public sealed partial class MainWindow : Window
         {
             // Restores HDR that automation turned on for programs still running.
             try { await hdr.DisposeAsync(); } catch { }
+            // Lights any panel it turned off before the app goes away.
+            displayIdle.Dispose();
             if (clipboardStartup is not null) await clipboardStartup;
             await ClipsPage.ShutdownAsync();
             if (clipboardPopup is not null) await clipboardPopup.ShutdownAsync();

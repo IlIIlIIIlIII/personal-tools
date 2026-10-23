@@ -1,0 +1,72 @@
+<UserControl x:Class="PersonalTools.DisplayIdlePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+    <StackPanel MaxWidth="1000" Margin="36,28,36,32" Spacing="16">
+      <Grid>
+        <TextBlock Text="화면 자동 끄기" Style="{StaticResource PageTitle}"/>
+        <Border Style="{StaticResource StatusPill}" HorizontalAlignment="Right" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Ellipse x:Name="StateDot" Width="8" Height="8" VerticalAlignment="Center" Fill="{ThemeResource TextFillColorTertiaryBrush}"/>
+            <FontIcon x:Name="StateMoon" Glyph="&#xE708;" FontSize="12" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" Visibility="Collapsed"/>
+            <TextBlock x:Name="StateText" Text="확인 중" FontSize="12"/>
+          </StackPanel>
+        </Border>
+      </Grid>
+      <TextBlock Style="{StaticResource Lead}" Text="입력이 없으면 고른 모니터의 화면만 끕니다. Windows는 모니터가 꺼진 것을 모르기 때문에 창 배치, 화면 출력, 실행 중인 프로그램은 그대로입니다."/>
+      <!-- Collapsed while closed so they do not add StackPanel spacing. -->
+      <InfoBar x:Name="Unresponsive" IsOpen="False" IsClosable="False" Severity="Warning" Visibility="Collapsed"
+               Message="모니터 메뉴(OSD)에서 DDC/CI를 켜야 자동으로 끌 수 있습니다. 나머지 모니터는 그대로 동작합니다."/>
+      <InfoBar x:Name="ErrorBar" IsOpen="False" IsClosable="False" Severity="Error" Visibility="Collapsed"/>
+
+      <Border Style="{StaticResource SettingCard}">
+        <Grid ColumnSpacing="16">
+          <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+          <FontIcon Glyph="&#xE708;" FontSize="20"/>
+          <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+            <TextBlock Text="화면 자동 끄기 사용"/>
+            <TextBlock Style="{StaticResource CardDescription}" Text="끄면 입력이 없어도 모니터를 끄지 않습니다."/>
+          </StackPanel>
+          <ToggleSwitch x:Name="EnabledSwitch" Grid.Column="2" OnContent="켬" OffContent="끔" MinWidth="0" IsEnabled="False" Toggled="EnabledToggled"
+                        AutomationProperties.Name="화면 자동 끄기 사용"/>
+        </Grid>
+      </Border>
+
+      <Border Style="{StaticResource SettingCard}">
+        <Grid ColumnSpacing="16">
+          <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+          <FontIcon Glyph="&#xE121;" FontSize="20"/>
+          <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+            <TextBlock Text="입력 없이 기다릴 시간"/>
+            <TextBlock Style="{StaticResource CardDescription}" Text="마지막 키보드·마우스·게임패드 입력 뒤 이 시간이 지나면 끕니다. 영상이나 게임 중에도 같습니다."/>
+          </StackPanel>
+          <ComboBox x:Name="WaitBox" Grid.Column="2" MinWidth="120" VerticalAlignment="Center" IsEnabled="False" SelectionChanged="WaitChanged"
+                    AutomationProperties.Name="입력 없이 기다릴 시간"/>
+        </Grid>
+      </Border>
+
+      <StackPanel Spacing="4">
+        <Grid Margin="0,8,0,4" MinHeight="32">
+          <TextBlock Text="끌 모니터" Style="{StaticResource GroupHeader}" Margin="0" VerticalAlignment="Center"/>
+          <Button x:Name="DarkenButton" HorizontalAlignment="Right" IsEnabled="False" Click="DarkenClick"
+                  ToolTipService.ToolTip="고른 모니터를 바로 끕니다. 1.5초 뒤부터 입력하면 다시 켜집니다." AutomationProperties.Name="지금 끄기">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <FontIcon Glyph="&#xE708;" FontSize="14"/>
+              <TextBlock Text="지금 끄기"/>
+            </StackPanel>
+          </Button>
+        </Grid>
+        <StackPanel x:Name="MonitorList" Spacing="4"/>
+        <TextBlock x:Name="MonitorsPending" Style="{StaticResource Muted}" Text="연결된 모니터를 확인하고 있습니다."/>
+      </StackPanel>
+
+      <StackPanel Spacing="4">
+        <TextBlock Text="최근 동작" Style="{StaticResource GroupHeader}" Margin="0,8,0,4"/>
+        <Border x:Name="RecentCard" Style="{StaticResource SettingCard}" Padding="16,4" MinHeight="0" Visibility="Collapsed">
+          <StackPanel x:Name="RecentList"/>
+        </Border>
+        <TextBlock x:Name="RecentEmpty" Style="{StaticResource Muted}" Text="앱을 시작한 뒤로 아직 끄거나 켠 기록이 없습니다."/>
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

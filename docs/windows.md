@@ -1,5 +1,9 @@
 # Windows 오디오 버전
 
+## 2026-10-23 화면 자동 끄기
+
+- 입력이 1분 없으면 MO32U24 두 대의 패널만 DDC/CI로 끄고 다음 입력에서 켭니다. Windows는 모니터가 켜진 것으로 보므로 창 배치와 렌더링이 그대로입니다. 메뉴 **화면 자동 끄기**(자동 HDR 아래)에서 사용 여부, 기다릴 시간, 끌 모니터를 고르고 바로 끌 수 있습니다. 시안: https://claude.ai/artifact/7dtoP5r9f84XYigQQUiJQE, 동작과 측정: [windows-display-idle.md](windows-display-idle.md).
+
 ## 2026-10-21 자동 HDR
 
 - **자동 HDR** 메뉴를 사운드 아래에 다시 넣었습니다. 등록한 프로그램이 시작되면 그때의 주 모니터 HDR을 켜고, 모두 종료되면 실행 전 상태로 되돌립니다. 전체 켜기/끄기, 프로그램별 켜기/끄기, 주 모니터 수동 전환을 제공합니다. 시안: https://claude.ai/artifact/6HEp13fuWcEHtSj3sYAcNK, 동작과 검증: [windows-hdr.md](windows-hdr.md).

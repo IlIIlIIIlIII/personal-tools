@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Sources/Windows/WinUI/DisplayIdle.cs" Link="DisplayIdle.cs"/>
+    <Compile Include="../../Sources/Windows/WinUI/DisplayDdc.cs" Link="DisplayDdc.cs"/>
+    <Compile Include="../../Sources/Windows/WinUI/IdleInput.cs" Link="IdleInput.cs"/>
+    <Compile Include="../../Sources/Windows/WinUI/HdrDisplay.cs" Link="HdrDisplay.cs"/>
+    <Compile Include="../../Sources/Windows/WinUI/HdrModels.cs" Link="HdrModels.cs"/>
+    <Compile Include="../../Sources/Windows/WinUI/DisplayPowerModels.cs" Link="DisplayPowerModels.cs"/>
+  </ItemGroup>
+</Project>

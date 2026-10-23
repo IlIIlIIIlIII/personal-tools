@@ -144,7 +144,7 @@ public sealed partial class HdrPage : UserControl
         label.Foreground = Resource(tone switch { "ok" => "SystemFillColorSuccessBrush", "warn" => "SystemFillColorCautionBrush", _ => "TextFillColorSecondaryBrush" });
         label.Text = text;
     }
-    private static Border Badge(string text, string tone)
+    internal static Border Badge(string text, string tone)
     {
         var label = new TextBlock { FontSize = 11, FontWeight = FontWeights.SemiBold };
         var border = new Border { CornerRadius = new CornerRadius(4), Padding = new Thickness(6, 1, 6, 2), VerticalAlignment = VerticalAlignment.Center, Child = label };

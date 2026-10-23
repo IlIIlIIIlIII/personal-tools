@@ -26,24 +26,33 @@ internal sealed class HdrDisplay : IHdrDisplay
     }
 
     private sealed record Target(PathInfo Path, HdrMonitor Monitor, bool Modern);
-    private static List<Target> Enumerate()
+    // Active display paths. The topology can change between the size query and the query, so it retries.
+    internal static PathInfo[] QueryActive(out ModeInfo[] modes)
     {
-        PathInfo[] paths = [];
-        ModeInfo[] modes = [];
-        uint pathCount = 0, modeCount = 0;
         for (int attempt = 0; ; attempt++)
         {
-            Check(GetDisplayConfigBufferSizes(2, out pathCount, out modeCount));
-            paths = new PathInfo[pathCount]; modes = new ModeInfo[modeCount];
+            Check(GetDisplayConfigBufferSizes(2, out uint pathCount, out uint modeCount));
+            var paths = new PathInfo[pathCount]; modes = new ModeInfo[modeCount];
             int result = QueryDisplayConfig(2, ref pathCount, paths, ref modeCount, modes, 0);
             if (result == 122 && attempt < 4) continue;
-            Check(result); break;
+            Check(result);
+            Array.Resize(ref modes, (int)modeCount);
+            return paths.Take((int)pathCount).ToArray();
         }
+    }
+    internal static bool TryTargetName(PathInfo path, out TargetName name)
+    {
+        name = new TargetName { Header = Header.For<TargetName>(2, path) };
+        return GetTargetName(ref name) == 0 && !string.IsNullOrWhiteSpace(name.DevicePath);
+    }
+    private static List<Target> Enumerate()
+    {
+        var paths = QueryActive(out var modes);
+        uint modeCount = (uint)modes.Length;
         var resultList = new List<Target>();
-        foreach (var path in paths.Take((int)pathCount))
+        foreach (var path in paths)
         {
-            var name = new TargetName { Header = Header.For<TargetName>(2, path) };
-            if (GetTargetName(ref name) != 0 || string.IsNullOrWhiteSpace(name.DevicePath)) continue;
+            if (!TryTargetName(path, out var name)) continue;
             bool primary = path.Source.ModeIndex < modeCount && modes[path.Source.ModeIndex].Type == 1 &&
                 modes[path.Source.ModeIndex].X == 0 && modes[path.Source.ModeIndex].Y == 0;
             var color = new Color2 { Header = Header.For<Color2>(15, path) };
