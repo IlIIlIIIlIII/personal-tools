@@ -83,6 +83,46 @@ int main(){
         if(onsetClears(60,1.f)){puts("A short pause between words cleared the model state");return 1;}
     }
     puts("Playback onset state reset passed");
+    {
+        using personaltools::win::PlaybackJump;
+        // A faint reference (-57 dBFS) for `hops`, the model keeping `gain` of the room sound, then
+        // playback at `loud` times the faint level. Returns whether the first loud hop cleared the state.
+        auto jumpClears=[](unsigned hops,float gain,float loud){
+            PlaybackJump jump;std::array<float,128> mic{},out{},faint{},playing{};
+            std::mt19937 random(11);std::normal_distribution<float> gauss(0.f,1.f);
+            for(unsigned k=0;k<128;++k){faint[k]=.0014f*gauss(random);playing[k]=loud*faint[k];}
+            for(unsigned hop=0;hop<hops;++hop){
+                for(unsigned k=0;k<128;++k){mic[k]=.003f*gauss(random);out[k]=gain*mic[k];}
+                if(jump.jumps(faint.data())){puts("A steady faint reference cleared the model state");std::exit(1);}
+                jump.processed(mic.data(),out.data());
+            }
+            const bool clear=jump.jumps(playing.data());jump.processed(mic.data(),out.data());
+            for(unsigned hop=0;hop<20;++hop){
+                if(jump.jumps(playing.data())){puts("Continuing playback cleared the model state again");std::exit(1);}
+                jump.processed(mic.data(),out.data());
+            }
+            return clear;
+        };
+        if(!jumpClears(200,1.f,20.f)){puts("Loud playback after a passed-through faint passage kept the model state");return 1;}
+        if(!jumpClears(200,.4f,20.f)){puts("Loud playback after a passage reduced by only 8 dB kept the model state");return 1;}
+        if(jumpClears(200,.15f,20.f)){puts("Loud playback after a suppressed passage cleared the model state");return 1;}
+        if(jumpClears(200,1.f,3.f)){puts("A 10 dB rise in playback cleared the model state");return 1;}
+        if(jumpClears(60,1.f,20.f)){puts("A jump in the first second of a stream cleared the model state");return 1;}
+        // A jump that stays below -60 dBFS is not playback the echo could be heard in.
+        PlaybackJump quiet;std::array<float,128> mic{},out{},silent{},faint{};
+        for(unsigned k=0;k<128;++k){mic[k]=.003f*((k*7919)%13/6.f-1);out[k]=mic[k];faint[k]=k%2?.0005f:-.0005f;}
+        for(unsigned hop=0;hop<200;++hop){quiet.jumps(silent.data());quiet.processed(mic.data(),out.data());}
+        if(quiet.jumps(faint.data())){puts("A -66 dBFS reference cleared the model state");return 1;}
+        // A crescendo of 20 dB per second never stands 15 dB above its own recent level.
+        PlaybackJump rising;std::array<float,128> level{};
+        for(unsigned hop=0;hop<375;++hop){
+            const float a=.0001f*std::pow(10.f,hop/125.f); // -80 to -20 dBFS
+            for(unsigned k=0;k<128;++k)level[k]=k%2?a:-a;
+            if(rising.jumps(level.data())){puts("A gradual crescendo cleared the model state");return 1;}
+            rising.processed(mic.data(),out.data());
+        }
+    }
+    puts("Playback jump state reset passed");
     personaltools::win::NeuralOutputMixer mixer;
     for(unsigned i=0;i<250;++i)mixer.process(.9f,.05f,true,true);
     float previous=.05f;

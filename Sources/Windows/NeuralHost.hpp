@@ -44,6 +44,34 @@ public:
 private:
     unsigned run_=0;bool quiet_=false;double input_=0,output_=0;
 };
+// The same stuck state without a silent pause: the reference stays faintly on (-57 dBFS between
+// a call partner's sentences, quiet passages in a video), which the NPU's FP16 inference barely
+// registers at this microphone level, so the model sits passing the microphone. When playback then
+// jumps 15 dB above its recent level the echo went through nearly unattenuated for 0.3-1.3 s.
+// A cleared state cancels within ~0.3 s on the NPU. Only a model removing less than 12 dB is
+// cleared, at most once a second and not in a stream's first second (the level average is still
+// settling). Clearing more often (10 dB jumps) leaked less but cut more near-end speech; see
+// docs/measurements/aec-jump-2026-10-21.md.
+class PlaybackJump {
+public:
+    static constexpr unsigned minimumGapHops=125; // 1 s
+    // Before the hop is processed; true when the model state should be cleared.
+    bool jumps(const float* reference){
+        double energy=0;for(unsigned k=0;k<128;++k)energy+=reference[k]*static_cast<double>(reference[k]);
+        const bool clear=energy>128e-6&&energy>average_*31.6&&output_>input_*.063&&since_>=minimumGapHops; // -60 dBFS, +15 dB, -12 dB
+        average_+=(energy-average_)/32; // ~0.25 s
+        since_=clear?0:since_+1;
+        return clear;
+    }
+    // After the same hop: how much the model removes overall (~0.3 s average).
+    void processed(const float* microphone,const float* output){
+        double in=0,out=0;
+        for(unsigned k=0;k<128;++k){in+=microphone[k]*static_cast<double>(microphone[k]);out+=output[k]*static_cast<double>(output[k]);}
+        input_+=.03*(in-input_);output_+=.03*(out-output_);
+    }
+private:
+    double average_=0,input_=0,output_=0;unsigned since_=0;
+};
 template<class Model=DtlnNpu>
 class NeuralHost {
 public:
@@ -71,7 +99,7 @@ private:
     };
     // Per-stream signal path; recreated whenever the APO claims the channel again.
     struct Pipeline{
-        StereoReferenceTimeline timeline;Fir micFir,refFir,outFir;PlaybackOnset onset;
+        StereoReferenceTimeline timeline;Fir micFir,refFir,outFir;PlaybackOnset onset;PlaybackJump jump;
         std::array<float,packetFrames>left{},right{};std::array<float,128>mic{},ref{},out{};
         std::uint64_t expected=0,base=0,processed=0,referenceEnd=0;unsigned count=0;bool unreferenced=false;
     };
@@ -185,9 +213,10 @@ private:
             const float m=s.micFir.tick(p.samples[i]),f=s.refFir.tick(available?s.left[i]:0.f);
             if((p.index+i-s.base)%3==0){s.mic[s.count]=m;s.ref[s.count]=f;++s.count;echo.push(m,f);}
             if(s.count==128){
-                if(s.onset.resumes(s.ref.data()))model.resetState();
+                const bool resumed=s.onset.resumes(s.ref.data()),jumped=s.jump.jumps(s.ref.data());
+                if(resumed||jumped)model.resetState();
                 model.process(s.mic.data(),s.ref.data(),s.out.data());
-                s.onset.processed(s.mic.data(),s.out.data());
+                s.onset.processed(s.mic.data(),s.out.data());s.jump.processed(s.mic.data(),s.out.data());
                 for(unsigned j=0;j<hop;++j){
                     const float value=s.outFir.tick(j%3==0?s.out[j/3]*3.f:0.f);
                     const auto idx=s.base+s.processed+j;

@@ -4,7 +4,8 @@
 // gaps and microphone timestamp jitter.
 // Usage: PersonalToolsAecWatch [seconds] [events.csv] [record-prefix]
 // With record-prefix, the raw microphone and reference packets the host receives are written
-// to <prefix>-ch<N>-mic.bin / -ref.bin (neural::Packet records) for offline replay.
+// to <prefix>-ch<N>-g<generation>-mic.bin / -ref.bin (neural::Packet records) for offline replay;
+// every stream restart gets new files instead of truncating the previous ones.
 #include "NeuralIpc.hpp"
 #include <algorithm>
 #include <bit>
@@ -56,7 +57,7 @@ int main(int argc,char** argv){
                 for(FILE* f:{w.micOut,w.refOut,w.outOut})if(f)std::fclose(f);
                 w=Watch{};w.started=true;w.generation=generation;w.lastW=c.microphone.w.load();w.refW=c.reference.w.load();
                 if(!record.empty()){
-                    const auto base=record+"-ch"+std::to_string(ch);
+                    const auto base=record+"-ch"+std::to_string(ch)+"-g"+std::to_string(generation);
                     w.micOut=std::fopen((base+"-mic.bin").c_str(),"wb");w.refOut=std::fopen((base+"-ref.bin").c_str(),"wb");
                     w.outOut=std::fopen((base+"-out.bin").c_str(),"wb");
                 }

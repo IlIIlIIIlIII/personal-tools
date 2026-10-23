@@ -108,6 +108,18 @@ if(MINGW)
     target_link_options(PersonalToolsAecReplay PRIVATE -static)
 endif()
 
+# Where echo got through in an AecWatch recording, and the same recording replayed with the
+# host's state rules switched on or off (diagnostics only).
+foreach(tool AecLiveScan AecVariantReplay)
+    add_executable(PersonalTools${tool} "../../Tools/${tool}.cpp")
+    target_include_directories(PersonalTools${tool} PRIVATE .)
+    target_compile_definitions(PersonalTools${tool} PRIVATE UNICODE _UNICODE NOMINMAX WIN32_LEAN_AND_MEAN)
+    target_link_libraries(PersonalTools${tool} PRIVATE PersonalToolsWindowsShared)
+    if(MINGW)
+        target_link_options(PersonalTools${tool} PRIVATE -static)
+    endif()
+endforeach()
+
 add_executable(PersonalToolsNeuralReplay "../../Tests/WindowsNeuralReplay.cpp")
 target_include_directories(PersonalToolsNeuralReplay PRIVATE .)
 target_compile_definitions(PersonalToolsNeuralReplay PRIVATE NOMINMAX)

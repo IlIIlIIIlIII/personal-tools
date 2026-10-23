@@ -163,15 +163,16 @@ int main(int argc,char** argv){
     }
     personaltools::win::DtlnNpu model;model.open(argv[1]);
     for(const double shift:shifts){
-        model.reset();Fir micFir,refFir,outFir;PlaybackOnset onset;const auto reference=shift==0?ref0:renderReference(shift);
+        model.reset();Fir micFir,refFir,outFir;PlaybackOnset onset;PlaybackJump jump;const auto reference=shift==0?ref0:renderReference(shift);
         std::vector<float> out(raw.size());std::array<float,128> m{},f{},o{};unsigned count=0;std::uint64_t processed=0;
         for(size_t n=0;n<raw.size();++n){
             const float a=micFir.tick(raw[n]),b=refFir.tick(reference[n]);
             if(n%3==0){m[count]=a;f[count]=b;++count;}
             if(count==128){
-                if(onset.resumes(f.data()))model.resetState();
+                const bool resumed=onset.resumes(f.data()),jumped=jump.jumps(f.data());
+                if(resumed||jumped)model.resetState();
                 model.process(m.data(),f.data(),o.data());
-                onset.processed(m.data(),o.data());
+                onset.processed(m.data(),o.data());jump.processed(m.data(),o.data());
                 for(unsigned j=0;j<hop;++j){const float v=outFir.tick(j%3==0?o[j/3]*3.f:0.f);if(processed+j>=modelDelay)out[processed+j-modelDelay]=v;}
                 processed+=hop;count=0;
             }
