@@ -35,24 +35,80 @@ static int runDelay(personaltools::win::EchoDelayEstimator& e,const std::vector<
     return changes;
 }
 
+// A call whose far end plays the microphone back `back` samples later, at 16 kHz: talk spurts of
+// the user (`talk`) and of the partner (`partner`), the room echoing the speaker after `echo`.
+// Feeds the estimator like the host; returns the largest shift it applied.
+static int runCall(personaltools::win::EchoDelayEstimator& e,int seconds,int echo,int back,float talk,float partner,unsigned seed){
+    const int n=seconds*16000;std::mt19937 random(seed);std::normal_distribution<float> gauss(0.f,1.f);std::uniform_real_distribution<float> uniform(0.f,1.f);
+    auto spurts=[&](float amplitude,float pauses){
+        std::vector<float> v(n);int i=0;
+        while(i<n){
+            const int on=static_cast<int>((0.3f+1.7f*uniform(random))*16000),off=static_cast<int>((0.2f+2.8f*uniform(random)*pauses)*16000);
+            float low=0;for(int k=0;k<on&&i<n;++k,++i){low+=0.2f*(gauss(random)-low);v[i]=amplitude*3*low*(0.6f+0.4f*std::sin(6.2832f*4*k/16000.f));}
+            i+=off;
+        }
+        return v;
+    };
+    const auto user=spurts(talk,1.f),remote=spurts(partner,1.6f);std::vector<float> mic(n),ref(n);int largest=e.shift();
+    for(int i=0;i<n;++i){
+        ref[i]=remote[i]+(i>=back?0.5f*mic[i-back]:0.f);
+        mic[i]=user[i]+(i>=echo?0.3f*ref[i-echo]:0.f)+0.0005f*gauss(random);
+        const int shifted=i-e.shift();e.push(mic[i],shifted>=0?ref[shifted]:0.f);e.update();largest=std::max(largest,e.shift());
+    }
+    return largest;
+}
+
 int main(){
     {
         using personaltools::win::EchoDelayEstimator;
+        constexpr int margin=EchoDelayEstimator::marginSamples;
         // Playback in 1.5 s parts with 1.2 s silences (where a new shift may be applied).
         std::mt19937 random(3);std::normal_distribution<float> gauss(0.f,0.1f);
-        std::vector<float> ref(16000*16);for(size_t n=0;n<ref.size();++n)ref[n]=n%43200<24000?gauss(random):0.f;
-        std::vector<float> steady(16000*16);for(size_t n=0;n<steady.size();++n)steady[n]=n%19200<16000?gauss(random):0.f;
+        std::vector<float> ref(16000*24);for(size_t n=0;n<ref.size();++n)ref[n]=n%43200<24000?gauss(random):0.f;
+        // Playback with only short pauses between words.
+        std::vector<float> steady(16000*60);for(size_t n=0;n<steady.size();++n)steady[n]=n%19200<16000?gauss(random):0.f;
         {
-            // Pauses between words are not enough: the shift waits instead of moving the reference mid-playback.
+            // Pauses between words are not enough: a small correction (4 ms) waits instead of
+            // moving the reference mid-playback.
+            EchoDelayEstimator e;e.seed(592);runDelay(e,steady,656,0,16000*8,0.003f);
+            if(std::abs(e.delay()-656)>2||e.shift()!=592-margin){printf("echo delay %d shift %d\n",e.delay(),e.shift());puts("Reference moved while it was playing");return 1;}
+        }
+        {
+            // The first measurement, 24 ms away from the unshifted reference, does not wait.
             EchoDelayEstimator e;runDelay(e,steady,592,0,16000*8,0.003f);
-            if(e.delay()<0||e.shift()!=0){puts("Reference moved while it was playing");return 1;}
+            if(std::abs(e.shift()-(592-margin))>2){printf("echo delay %d shift %d\n",e.delay(),e.shift());puts("The first echo delay waited for a pause");return 1;}
+        }
+        {
+            // 2026-10-24: the reference had been moved step by step to ~1 s behind the echo. A shift
+            // far past the echo comes back while the playback goes on.
+            EchoDelayEstimator e;e.seed(3200);runDelay(e,steady,592,0,16000*60,0.003f);
+            if(std::abs(e.delay()-592)>2||std::abs(e.shift()-(592-margin))>2){printf("echo delay %d shift %d\n",e.delay(),e.shift());puts("A reference shifted far past the echo was not pulled back");return 1;}
+        }
+        {
+            // Delays beyond what the estimator searches (250 ms) are neither remembered nor measured.
+            EchoDelayEstimator e;e.seed(15898);
+            if(e.delay()!=-1||e.shift()!=0){puts("An unreachable remembered echo delay was applied");return 1;}
+            runDelay(e,steady,4800,0,16000*20,0.003f);
+            if(e.delay()>EchoDelayEstimator::maxDelay||e.shift()>EchoDelayEstimator::maxDelay){printf("echo delay %d shift %d\n",e.delay(),e.shift());puts("An echo delay beyond 250 ms was adopted");return 1;}
+        }
+        {
+            // Talking far above the playback is no echo measurement.
+            EchoDelayEstimator e;std::mt19937 talk(11);std::normal_distribution<float> voice(0.f,1.f);
+            for(int n=0;n<16000*10;++n){const float r=0.003f*voice(talk),m=0.2f*voice(talk);e.push(m,r);e.update();}
+            if(e.delay()!=-1||e.nearEnd()==0){printf("echo delay %d near-end windows %d\n",e.delay(),e.nearEnd());puts("Near-end speech was taken for an echo");return 1;}
+        }
+        for(unsigned seed=1;seed<=4;++seed){
+            // A call partner sending the user's voice back ~190 ms later keeps the adopted delay.
+            EchoDelayEstimator e;e.seed(592);
+            const int largest=runCall(e,180,592,2900+100*static_cast<int>(seed),0.05f,0.01f,seed);
+            if(std::abs(e.delay()-592)>16||largest>592-margin+EchoDelayEstimator::deadBand){printf("seed %u echo delay %d largest shift %d\n",seed,e.delay(),largest);puts("A call loop moved the echo delay");return 1;}
         }
         EchoDelayEstimator e;
         runDelay(e,ref,592,0,16000*6,0.003f); // 37 ms, like the USB DAC measured on 2026-10-20
         if(std::abs(e.delay()-592)>2||std::abs(e.shift()-(592-EchoDelayEstimator::marginSamples))>2){printf("echo delay %d shift %d\n",e.delay(),e.shift());puts("Echo delay was not found");return 1;}
         if(runDelay(e,ref,592,16000*6,16000*10,0.003f)!=0){puts("A stable echo delay moved the reference again");return 1;}
         // A faster output device: the reference is now shifted past the echo and must come back.
-        runDelay(e,ref,200,16000*10,16000*16,0.003f);
+        runDelay(e,ref,200,16000*10,16000*24,0.003f);
         if(std::abs(e.delay()-200)>2||e.shift()!=0){printf("echo delay %d shift %d\n",e.delay(),e.shift());puts("Reference shifted past the echo was not pulled back");return 1;}
         EchoDelayEstimator quiet;std::vector<float> silence(ref.size());
         runDelay(quiet,silence,592,0,16000*4,0.003f);

@@ -231,8 +231,8 @@ private:
                 s.processed+=hop;s.count=0;s.unreferenced=!available;
                 // After the results are out: the estimate runs an FFT every half second.
                 if(echo.update())report("echo delay "+std::to_string(echo.delay()*1000/16)+" us, reference shift "+std::to_string(echo.shift()*1000/16)+" us");
-                if(const int known=knownDelay_.load();echo.delay()>=0&&(known<0||std::abs(echo.delay()-known)>=32)){
-                    knownDelay_.store(echo.delay()); // estimates wander by ~1 ms; keep only real changes
+                if(const int known=knownDelay_.load();echo.delay()>=0&&(known<0||std::abs(echo.delay()-known)>=EchoDelayEstimator::deadBand)){
+                    knownDelay_.store(echo.delay()); // estimates wander by a few ms; keep only real changes
                     if(delayChanged_)try{delayChanged_(echo.delay()*1000/16);}catch(...){}
                 }
                 c.echoDelayUs.store(echo.delay()<0?-1:echo.delay()*1000/16,std::memory_order_relaxed);

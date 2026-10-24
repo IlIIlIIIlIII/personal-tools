@@ -36,7 +36,8 @@ std::wstring renderDevice(){SharedFile settings;Configuration config;LONG revisi
 std::filesystem::path delayPath(){const auto log=logPath();return log.empty()?log:log.parent_path()/L"echo-delay.txt";}
 int loadDelay(){
     const auto device=renderDevice();std::wifstream in(delayPath());std::wstring id;int us=-1;
-    return !device.empty()&&std::getline(in,id)&&id==device&&(in>>us)&&us>=0&&us<300000?us:-1;
+    // A delay beyond what the estimator searches was never a real echo (see EchoDelay.hpp).
+    return !device.empty()&&std::getline(in,id)&&id==device&&(in>>us)&&us>=0&&static_cast<long long>(us)*16/1000<=EchoDelayEstimator::maxDelay?us:-1;
 }
 void saveDelay(int us){
     const auto device=renderDevice();if(device.empty()||delayPath().empty())return;
