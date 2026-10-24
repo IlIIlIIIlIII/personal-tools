@@ -41,9 +41,13 @@ public:
     // stronger there than at the adopted delay. That correlation averages the windows' cross
     // spectra in absolute delay coordinates over about 10 s of playback: single windows peak at
     // random delays while the user talks or the call loops, but the echo path keeps its phase and
-    // is what remains. A seeded delay is kept for the first 20 evaluated windows either way.
+    // is what remains. A seeded delay is kept for the first 20 evaluated windows, and after a large
+    // move the next one waits as long (no flapping between two arrivals).
+    // A later arrival while the adopted one still shows needs twice its strength: the same sound
+    // played on the speaker and on Bluetooth earphones near the microphone arrives ~35 ms and
+    // ~225 ms late, and the earlier one is the speaker.
     static constexpr int moveDistance=160,moveEvidence=20;
-    static constexpr float moveMargin=1.25f;
+    static constexpr float moveMargin=1.25f,laterMargin=2.f;
     EchoDelayEstimator():mic_(window),ref_(window),average_(size),work_(size),other_(size),history_(size){recent_.fill(-100000);}
     // Clears the signal history but keeps an adopted delay (it belongs to the output device).
     void restart(){std::fill(mic_.begin(),mic_.end(),0.f);std::fill(ref_.begin(),ref_.end(),0.f);pos_=0;count_=0;filled_=0;clearAverage();}
@@ -97,7 +101,7 @@ public:
         {   // Rotated by the shift (a delay of `shift` samples) into absolute delay coordinates.
             const std::complex<double> step=std::polar(1.0,-2*std::numbers::pi*shift_/size);std::complex<double> rotation(1,0);
             for(int k=0;k<size;++k){history_[k]+=0.05f*(other_[k]*std::complex<float>(rotation)-history_[k]);rotation*=step;}
-            profiled_=std::min(profiled_+1,moveEvidence);
+            evidence_=std::min(evidence_+1,moveEvidence);
         }
         if(peak<=8*mean)return false;
         // The echo onset: the earliest clear arrival at least 60 % as strong as the strongest one,
@@ -113,7 +117,7 @@ public:
             // Clear windows are sparse while the user talks; one stray peak must not reset the count.
             int votes=0;for(const int r:recent_)votes+=std::abs(r-delay)<=48;
             if(votes<3||!longTermPrefers(delay))return false;
-            recent_.fill(-100000);delay_=delay;
+            recent_.fill(-100000);delay_=delay;evidence_=0;
         }else{
             if(std::abs(delay-candidate_)<=16)++hits_;else{candidate_=delay;hits_=1;}
             if(hits_<3)return false;
@@ -143,7 +147,7 @@ private:
     // Whether the long-term correlation shows a clear arrival at `delay` that is
     // stronger than the one at the adopted delay. Overwrites work_.
     bool longTermPrefers(int delay){
-        if(profiled_<moveEvidence)return false;
+        if(evidence_<moveEvidence)return false;
         work_=history_;fft(work_,true);
         const auto at=[&](int d){return std::abs(work_[d].real());};
         double sum=0;for(int d=0;d<=maxDelay;++d)sum+=at(d);
@@ -151,8 +155,9 @@ private:
         // Within 3 ms: arrivals 2 ms apart (34 and 36 ms here) merge in the long-term average.
         const auto around=[&](int centre){float v=0;for(int d=std::max(0,centre-48);d<=std::min(maxDelay,centre+48);++d)v=std::max(v,at(d));return v;};
         // Noise alone peaks near 3.3 times the mean over these 4001 delays.
-        const float candidate=around(delay);
-        return candidate>5*mean&&candidate>=moveMargin*around(delay_);
+        const float candidate=around(delay),adopted=around(delay_);
+        const float margin=delay>delay_&&adopted>5*mean?laterMargin:moveMargin;
+        return candidate>5*mean&&candidate>=margin*adopted;
     }
     static void fft(std::vector<std::complex<float>>& data,bool inverse){
         const int n=static_cast<int>(data.size());
@@ -171,7 +176,7 @@ private:
     std::vector<std::complex<float>> history_; // long-term cross spectrum, absolute delay coordinates
     std::array<int,8> recent_{}; // latest clear estimates (16 kHz samples)
     unsigned recentPos_=0;
-    int pos_=0,count_=0,filled_=0,candidate_=-100000,hits_=0,delay_=-1,shift_=0,target_=0,quiet_=0,pending_=0,lastLag_=0,evaluations_=0,returned_=0,profiled_=0,nearEnd_=0;
+    int pos_=0,count_=0,filled_=0,candidate_=-100000,hits_=0,delay_=-1,shift_=0,target_=0,quiet_=0,pending_=0,lastLag_=0,evaluations_=0,returned_=0,evidence_=0,nearEnd_=0;
     float lastRatio_=0;bool averaged_=false;
 };
 }

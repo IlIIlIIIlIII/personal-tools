@@ -102,6 +102,8 @@ private:
         StereoReferenceTimeline timeline;Fir micFir,refFir,outFir;PlaybackOnset onset;PlaybackJump jump;
         std::array<float,packetFrames>left{},right{};std::array<float,128>mic{},ref{},out{};
         std::uint64_t expected=0,base=0,processed=0,referenceEnd=0;unsigned count=0;bool unreferenced=false;
+        // Microphone time expected for `stampIndex`, following slow clock drift (see step()).
+        std::uint64_t stampTime=0,stampIndex=0;bool stamped=false;
     };
     void report(const std::string& message){if(log_)try{log_(message);}catch(...){}}
     bool pause(std::chrono::milliseconds delay,neural::Channel* channel=nullptr){
@@ -205,9 +207,20 @@ private:
         // Only a break in the microphone sample sequence realigns the output. Timestamp jitter
         // and reference gaps need no model reset: the reference is rendered from each p.time.
         if(p.index!=s.expected){
-            model.reset();s.micFir.reset();s.refFir.reset();s.outFir.reset();s.count=0;s.processed=0;s.base=p.index;
+            model.reset();s.micFir.reset();s.refFir.reset();s.outFir.reset();s.count=0;s.processed=0;s.base=p.index;s.stamped=false;
         }
         s.expected=p.index+p.frames;
+        // A microphone whose timestamps disagree with its sample count cannot be lined up with the
+        // reference (2026-10-24: a stuck MOTU delivered half the samples with real-time stamps, and
+        // the echo delay jumped between 0 and 250 ms). Packets more than 5 ms off the drift-following
+        // expectation (normally within 3 ms) restart the delay measurement's window.
+        if(s.stamped){
+            const auto expectedTime=static_cast<std::int64_t>(s.stampTime)+static_cast<std::int64_t>((p.index-s.stampIndex)*10000000ull/48000);
+            const auto deviation=static_cast<std::int64_t>(p.time)-expectedTime;
+            if(deviation>50000||deviation<-50000){echo.restart();s.stampTime=p.time;}
+            else s.stampTime=static_cast<std::uint64_t>(expectedTime+deviation/16);
+        }else{s.stampTime=p.time;s.stamped=true;}
+        s.stampIndex=p.index;
         s.unreferenced=s.unreferenced||!available;
         for(unsigned i=0;i<p.frames;++i){
             const float m=s.micFir.tick(p.samples[i]),f=s.refFir.tick(available?s.left[i]:0.f);

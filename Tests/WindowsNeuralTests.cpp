@@ -97,6 +97,29 @@ int main(){
             for(int n=0;n<16000*10;++n){const float r=0.003f*voice(talk),m=0.2f*voice(talk);e.push(m,r);e.update();}
             if(e.delay()!=-1||e.nearEnd()==0){printf("echo delay %d near-end windows %d\n",e.delay(),e.nearEnd());puts("Near-end speech was taken for an echo");return 1;}
         }
+        {
+            // The same sound from the speaker (35 ms) and from Bluetooth earphones near the microphone
+            // (225 ms), the earphone path changing every 15 s: the speaker delay stays while it shows,
+            // and only an earphone path that keeps dominating takes over, once.
+            auto run=[&](std::vector<float> ratios,int& changes){
+                const int segment=15*16000,n=segment*static_cast<int>(ratios.size());
+                std::mt19937 noise(9);std::normal_distribution<float> g(0.f,1.f);std::uniform_real_distribution<float> u(0.f,1.f);
+                std::vector<float> play(n);
+                for(int i=0;i<n;){const int on=static_cast<int>((0.5f+2.f*u(noise))*16000),off=static_cast<int>(0.3f*u(noise)*16000);
+                    float low=0;for(int k=0;k<on&&i<n;++k,++i){low+=0.3f*(g(noise)-low);play[i]=0.3f*low;}i+=off;}
+                EchoDelayEstimator e;e.seed(560);changes=0;
+                for(int i=0;i<n;++i){
+                    const float m=(i>=560?0.15f*play[i-560]:0.f)+(i>=3600?0.15f*ratios[i/segment]*play[i-3600]:0.f)+0.002f*g(noise);
+                    const int shifted=i-e.shift();e.push(m,shifted>=0?play[shifted]:0.f);changes+=e.update();
+                }
+                return e.delay();
+            };
+            int changes=0;
+            const int flapping=run({0.3f,8,0.3f,8,0.3f,8,0.3f,8},changes);
+            if(std::abs(flapping-560)>16||changes!=0){printf("echo delay %d after %d changes\n",flapping,changes);puts("A varying earphone path moved the speaker echo delay");return 1;}
+            const int taken=run({1,2,4,8,16,16,16},changes);
+            if(std::abs(taken-3600)>16||changes!=1){printf("echo delay %d after %d changes\n",taken,changes);puts("A lasting earphone path was not taken over exactly once");return 1;}
+        }
         for(unsigned seed=1;seed<=4;++seed){
             // A call partner sending the user's voice back ~190 ms later keeps the adopted delay.
             EchoDelayEstimator e;e.seed(592);
@@ -316,6 +339,35 @@ int main(){
         printf("host echo delay: %d us, reference shift %d us, misses=%llu\n",delayUs,shiftUs,static_cast<unsigned long long>(stream.misses()));
         if(std::abs(delayUs-40000)>200||std::abs(shiftUs-27000)>200){puts("Host did not align the reference to the measured echo delay");return 1;}
         if(std::abs(saved.load()-40000)>200){puts("Measured echo delay was not handed over for the next start");return 1;}
+    }
+    {
+        // 2026-10-24: a stuck MOTU delivered half the samples its real-time timestamps cover. Lined
+        // up by those timestamps, its microphone matched every other 10 ms of the reference 40 ms
+        // late; nothing may be measured from such a stream.
+        wchar_t temp[MAX_PATH]{};GetTempPathW(MAX_PATH,temp);
+        NeuralStream stream;
+        NeuralHost<HalfModel> host(temp,neural::Mapping::defaultName(),std::chrono::milliseconds(20),{},-1);
+        if(!until([&]{return stream.state()==neural::hostRunning;})){puts("Host never reached running state");return 1;}
+        neural::Mapping view;view.open(neural::Mapping::defaultName(),false);
+        neural::Channel* channel=nullptr;for(auto& c:view.get()->channels)if(c.owner.load())channel=&c;
+        constexpr unsigned chunk=480,total=48000*6,echo=1920;
+        std::mt19937 random(6);std::normal_distribution<float> gauss(0.f,0.1f);
+        std::vector<float> ref(total),mic(total/2),out(total/2),stereo(chunk*2);
+        for(auto& v:ref)v=gauss(random);
+        // Microphone sample n is stamped with the time of reference sample seen(n).
+        auto seen=[&](unsigned n){return ref[(n/chunk)*2*chunk+n%chunk];};
+        for(unsigned n=echo;n<total/2;++n)mic[n]=0.3f*seen(n-echo);
+        const auto start=now100ns();
+        for(unsigned pos=0;pos<total;pos+=chunk){
+            const auto time=start+static_cast<std::uint64_t>(pos)*10000000ull/48000;
+            while(now100ns()<time)Sleep(1);
+            for(unsigned i=0;i<chunk;++i)stereo[i*2]=stereo[i*2+1]=ref[pos+i];
+            stream.reference(stereo.data(),chunk,2,time,false);
+            if(pos/chunk%2==0)stream.microphone(mic.data()+pos/2,out.data()+pos/2,chunk,1,1,time,false,true);
+        }
+        const int delayUs=channel?channel->echoDelayUs.load():-2;
+        printf("half-rate microphone: echo delay %d us\n",delayUs);
+        if(delayUs!=-1){puts("An echo delay was measured from a microphone whose timestamps disagree with its samples");return 1;}
     }
     {
         // A remembered delay applies from the first block of the next stream.
