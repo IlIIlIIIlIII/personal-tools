@@ -36,6 +36,39 @@ HDR 전용 DisplayConfig API를 우선 사용합니다. 구형 API만 있는 Win
 모니터 EDID의 PQ HDR 지원 정보까지 확인하며 확인할 수 없는 화면은 수동 변경을
 비활성화합니다. 이는 SDR의 자동 색상 관리를 HDR로 잘못 켜는 것을 방지합니다.
 
+## 작업표시줄 HDR 버튼
+
+모든 모니터의 작업표시줄 오른쪽(주 모니터는 트레이 아이콘 왼쪽, 나머지는 시계 왼쪽)에
+그 모니터의 HDR만 켜고 끄는 **HDR** 배지가 붙습니다. 꺼짐은 테두리, 켜짐은 강조색으로 채우고,
+전환 중에는 흐려지며 아래 막대가 움직입니다. 자동 HDR이 게임 때문에 켠 주 모니터에는 흰 점,
+Windows가 HDR을 막고 있으면(배터리 등) 노란 점이 붙습니다. 마우스를 올리면 모니터 이름과 상태가,
+오른쪽 클릭하면 HDR 켜기/끄기, Windows HDR 설정, 자동 HDR 열기, 작업표시줄 버튼 설정 메뉴가 나옵니다.
+버튼으로 바꾸는 것은 앱의 수동 변경과 같아서 게임 중에 누르면 그 게임이 끝날 때까지 직접 고른 설정을 유지합니다.
+**자동 HDR → 작업표시줄 버튼**에서 전체 표시와 모니터별 표시를 고릅니다(`settings.json`의
+`TaskbarButtons`, `TaskbarHidden`). HDR을 지원하지 않는 모니터와 작업표시줄이 없는 모니터에는 나타나지 않습니다.
+화면 시안: https://claude.ai/artifact/M8LZqXcTbkkArBSbxrbSPG (A안)
+
+Windows 11에는 작업표시줄 버튼 API가 없어서 각 버튼은 Explorer의 `Shell_TrayWnd`/`Shell_SecondaryTrayWnd`
+안에 넣은 레이어드 자식 창입니다. 작업표시줄과 함께 움직이고 숨으므로 전체 화면 게임 중에는 보이지 않습니다.
+자식 창은 Explorer와 입력 큐를 공유하므로 전용 스레드에서 돌리고 HDR 변경과 UI Automation은 스레드 풀에서 합니다.
+보조 작업표시줄의 시계는 XAML이라 창이 없어서 UI Automation(`AutomationId` `SystemTrayIcon`)으로 왼쪽 끝을 읽고,
+읽기 전에는 오른쪽에서 79 DIP로 가정합니다. 트레이 크기 변화는 Explorer의 창 위치 이벤트로 바로 따라가고,
+시계 폭은 1분마다 다시 읽습니다. Explorer가 다시 시작되면(`TaskbarCreated`) 버튼을 다시 붙입니다.
+메뉴를 작업표시줄 테마에 맞추려고 uxtheme의 비공개 함수(`SetPreferredAppMode`, `FlushMenuThemes`)를 씁니다.
+오류는 `%LOCALAPPDATA%\PersonalTools\Hdr\taskbar.log`에 남습니다.
+
+```powershell
+dotnet build Tests/TaskbarHdr/TaskbarHdrTests.csproj -c Release -p:Platform=x64
+Tests/TaskbarHdr/bin/x64/Release/net8.0-windows10.0.19041.0/TaskbarHdrTests.exe
+Tests/TaskbarHdr/bin/x64/Release/net8.0-windows10.0.19041.0/TaskbarHdrTests.exe --show --out <폴더>
+```
+
+인수 없이 실행하면 그리기·배치·설정 검사와 이 PC 작업표시줄의 읽기 전용 확인을 합니다. `--show`는 가짜 HDR
+서비스로 실제 작업표시줄에 약 10초간 버튼을 띄우고 단계별 PNG를 남기며 실제 모니터 HDR은 바꾸지 않습니다.
+2026-10-25 검증: 검사 9개 통과, 모니터 4대(150%·200% 혼합) 모두에 버튼이 붙고 꺼짐·켜짐·자동·전환 중·제한
+상태, 툴팁, 다크 메뉴, 양방향 클릭 전환을 캡처로 확인했습니다. 설치된 앱에 배포한 뒤 4개 버튼과 설정 카드를 확인했습니다.
+실제 모니터 HDR을 버튼으로 바꾸는 확인은 사용자가 직접 눌러 보는 것으로 남겨 두었습니다.
+
 ## Windows 위젯 설치
 
 날씨가 있는 Windows 11 위젯 보드용입니다. 트레이 팝업이나 바탕화면 창이 아닙니다.

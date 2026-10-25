@@ -14,11 +14,21 @@ public sealed record HdrGameStatus(HdrGame Game, bool Enabled, bool Running, str
 public sealed record HdrActive(string MonitorId, bool Original, bool Manual, DateTimeOffset? StartedAt, string[] Programs);
 // DisplayPower stays for the widget wire format; the app no longer fills it.
 public sealed record HdrSnapshot(HdrMonitor[] Monitors, HdrProgramStatus[] Programs, string? Error, string? Warning = null, DisplayPowerSnapshot? DisplayPower = null,
-    bool Enabled = true, HdrActive[]? Active = null, bool GamesEnabled = true, HdrGameStatus[]? Games = null, DateTimeOffset? GamesScannedAt = null);
+    bool Enabled = true, HdrActive[]? Active = null, bool GamesEnabled = true, HdrGameStatus[]? Games = null, DateTimeOffset? GamesScannedAt = null,
+    bool TaskbarButtons = true, string[]? TaskbarHidden = null);
 public sealed record HdrRequest(string Command, string? MonitorId = null, bool Enabled = false);
 public sealed record HdrCandidate(string Name, string Path, bool Launcher);
 // Games turns library detection on; DisabledGames holds the HdrGame.Key values the user switched off.
-public sealed record HdrSettings(bool Enabled = true, bool Games = true, string[]? DisabledGames = null);
+// TaskbarButtons shows an HDR button on every taskbar; TaskbarHidden holds the monitor ids left without one.
+public sealed record HdrSettings(bool Enabled = true, bool Games = true, string[]? DisabledGames = null, bool TaskbarButtons = true, string[]? TaskbarHidden = null);
+
+// What the taskbar HDR buttons need from the HDR service; their test harness fakes it so no monitor changes.
+internal interface ITaskbarHdrSource
+{
+    HdrSnapshot Snapshot { get; }
+    event Action<HdrSnapshot>? Changed;
+    Task<HdrSnapshot> RequestAsync(HdrRequest request);
+}
 
 public interface IHdrDisplay
 {

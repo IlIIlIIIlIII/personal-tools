@@ -45,6 +45,17 @@ internal sealed class HdrDisplay : IHdrDisplay
         name = new TargetName { Header = Header.For<TargetName>(2, path) };
         return GetTargetName(ref name) == 0 && !string.IsNullOrWhiteSpace(name.DevicePath);
     }
+    // \\.\DISPLAYn, the name MonitorFromWindow's monitor reports, to the monitor id (target device path).
+    internal static Dictionary<string, string> GdiNames()
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var path in QueryActive(out _))
+        {
+            var source = new SourceName { Header = new() { Type = 1, Size = (uint)Marshal.SizeOf<SourceName>(), Adapter = path.Source.Adapter, Id = path.Source.Id } };
+            if (GetSourceName(ref source) == 0 && TryTargetName(path, out var target)) result.TryAdd(source.GdiName, target.DevicePath);
+        }
+        return result;
+    }
     private static List<Target> Enumerate()
     {
         var paths = QueryActive(out var modes);
@@ -146,12 +157,18 @@ internal sealed class HdrDisplay : IHdrDisplay
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)] public string FriendlyName;
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)] public string DevicePath;
     }
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)] internal struct SourceName
+    {
+        public Header Header;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string GdiName;
+    }
     [StructLayout(LayoutKind.Sequential)] internal struct Color1 { public Header Header; public uint Flags, Encoding, Bits; }
     [StructLayout(LayoutKind.Sequential)] internal struct Color2 { public Header Header; public uint Flags, Encoding, Bits, Mode; }
     [StructLayout(LayoutKind.Sequential)] internal struct SetColor { public Header Header; public uint Value; }
     [DllImport("user32.dll")] private static extern int GetDisplayConfigBufferSizes(uint flags, out uint paths, out uint modes);
     [DllImport("user32.dll")] private static extern int QueryDisplayConfig(uint flags, ref uint paths, [Out] PathInfo[] path, ref uint modes, [Out] ModeInfo[] mode, nint topology);
     [DllImport("user32.dll", EntryPoint = "DisplayConfigGetDeviceInfo")] private static extern int GetTargetName(ref TargetName value);
+    [DllImport("user32.dll", EntryPoint = "DisplayConfigGetDeviceInfo")] private static extern int GetSourceName(ref SourceName value);
     [DllImport("user32.dll", EntryPoint = "DisplayConfigGetDeviceInfo")] private static extern int GetColor1(ref Color1 value);
     [DllImport("user32.dll", EntryPoint = "DisplayConfigGetDeviceInfo")] private static extern int GetColor2(ref Color2 value);
     [DllImport("user32.dll", EntryPoint = "DisplayConfigSetDeviceInfo")] private static extern int SetDeviceInfo(ref SetColor value);

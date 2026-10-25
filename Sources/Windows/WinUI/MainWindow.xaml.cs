@@ -15,6 +15,7 @@ public sealed partial class MainWindow : Window
     private ClipboardPopup? clipboardPopup;
     private Task? clipboardStartup;
     private TrayIcon? tray;
+    private TaskbarHdrButtons? taskbarHdr;
     private bool quitting, started;
 
     public MainWindow()
@@ -64,7 +65,7 @@ public sealed partial class MainWindow : Window
             if (!quitting && tray?.Available == true) { e.Cancel = true; AppWindow.Hide(); }
             else if (!quitting) { e.Cancel = true; Quit(); }
         };
-        Closed += (_, _) => { tray?.Dispose(); audio.Dispose(); windowSwitch.Dispose(); displayIdle.Dispose(); };
+        Closed += (_, _) => { taskbarHdr?.Dispose(); tray?.Dispose(); audio.Dispose(); windowSwitch.Dispose(); displayIdle.Dispose(); };
     }
     public void Show() { AppWindow.Show(); Activate(); }
     public void Start(bool inTray)
@@ -75,10 +76,22 @@ public sealed partial class MainWindow : Window
         audio.Start();
         windowSwitch.Start();
         hdr.Start();
+        try
+        {
+            taskbarHdr = new TaskbarHdrButtons(hdr, card => DispatcherQueue.TryEnqueue(() => ShowHdr(card)));
+            taskbarHdr.Start();
+        }
+        catch { taskbarHdr = null; /* The HDR page still works without the taskbar buttons. */ }
         displayIdle.Start();
         if (!inTray || tray?.Available != true) Show();
         // Start even when the window stays hidden in the tray; the page does not need to load.
         _ = BridgePage.StartBridgeAsync();
+    }
+    private void ShowHdr(bool taskbarCard)
+    {
+        Show();
+        Navigation.SelectedItem = Navigation.MenuItems.OfType<NavigationViewItem>().FirstOrDefault(item => item.Tag as string == "hdr");
+        if (taskbarCard) HdrsPage.ShowTaskbarCard();
     }
     private void ShowClipboardSettings()
     {
@@ -119,6 +132,7 @@ public sealed partial class MainWindow : Window
         quitting = true;
         try
         {
+            taskbarHdr?.Dispose();
             // Restores HDR that automation turned on for programs still running.
             try { await hdr.DisposeAsync(); } catch { }
             // Lights any panel it turned off before the app goes away.

@@ -22,7 +22,7 @@ public sealed partial class HdrPage : UserControl
     private Window? owner;
     private HdrSnapshot snapshot = new([], [], null);
     private string? rendered;
-    private bool updating, gamesExpanded = true;
+    private bool updating, gamesExpanded = true, taskbarExpanded = true;
     public HdrPage() { InitializeComponent(); }
     private static Brush Resource(string key) => (Brush)Application.Current.Resources[key];
     private static Style StyleOf(string key) => (Style)Application.Current.Resources[key];
@@ -93,6 +93,13 @@ public sealed partial class HdrPage : UserControl
             MonitorSwitch.IsEnabled = usable;
         }
 
+        TaskbarSwitch.IsOn = value.TaskbarButtons;
+        TaskbarSwitch.IsEnabled = ready;
+        var hidden = (value.TaskbarHidden ?? []).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        TaskbarList.Children.Clear();
+        foreach (var monitor in value.Monitors) TaskbarList.Children.Add(TaskbarRow(monitor, !hidden.Contains(monitor.Id), ready && value.TaskbarButtons));
+        ShowTaskbar();
+
         GamesSwitch.IsOn = value.GamesEnabled;
         GamesSwitch.IsEnabled = ready;
         GamesDetail.Text = value.GamesEnabled ? "Steam, Ubisoft 같은 라이브러리에 설치한 게임과 Windows가 게임으로 인식한 프로그램에 적용합니다."
@@ -122,6 +129,53 @@ public sealed partial class HdrPage : UserControl
         GamesHeader.CornerRadius = gamesExpanded ? new CornerRadius(4, 4, 0, 0) : new CornerRadius(4);
         GamesChevron.Glyph = gamesExpanded ? "" : "";
         AutomationProperties.SetName(GamesExpand, gamesExpanded ? "감지한 게임 접기" : "감지한 게임 펼치기");
+    }
+
+    private void ShowTaskbar()
+    {
+        TaskbarBody.Visibility = taskbarExpanded ? Visibility.Visible : Visibility.Collapsed;
+        TaskbarHeader.CornerRadius = taskbarExpanded ? new CornerRadius(4, 4, 0, 0) : new CornerRadius(4);
+        TaskbarChevron.Glyph = taskbarExpanded ? "" : "";
+        AutomationProperties.SetName(TaskbarExpand, taskbarExpanded ? "모니터별 설정 접기" : "모니터별 설정 펼치기");
+    }
+    // Opened from a taskbar button's menu: the card, unfolded, in view.
+    internal void ShowTaskbarCard()
+    {
+        taskbarExpanded = true;
+        ShowTaskbar();
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
+            () => TaskbarHeader.StartBringIntoView(new BringIntoViewOptions { VerticalAlignmentRatio = 0.1, AnimationDesired = false }));
+    }
+    private Border TaskbarRow(HdrMonitor monitor, bool shown, bool enabled)
+    {
+        var label = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis };
+        label.Inlines.Add(new Run { Text = monitor.Name });
+        string role = monitor.Primary ? "주 모니터" : monitor.Internal ? "노트북 화면" : "";
+        if (role.Length > 0) label.Inlines.Add(new Run { Text = " · " + role, Foreground = Resource("TextFillColorSecondaryBrush") });
+        var box = new CheckBox { Content = label, IsChecked = shown && monitor.Supported, IsEnabled = enabled && monitor.Supported, MinWidth = 0, VerticalAlignment = VerticalAlignment.Center };
+        AutomationProperties.SetName(box, monitor.Name + " 작업표시줄에 HDR 버튼 표시");
+        box.Click += async (_, _) =>
+        {
+            bool value = box.IsChecked == true;
+            try { await Task.Run(() => controller!.SetTaskbarMonitorAsync(monitor.Id, value)); }
+            catch (Exception e) { ShowError(e); }
+        };
+        var state = new TextBlock
+        {
+            Text = !monitor.Supported ? "HDR 미지원" : monitor.Error is not null ? "HDR 제한" : monitor.Enabled ? "HDR 켜짐" : "HDR 꺼짐",
+            FontSize = 12, Foreground = Resource("TextFillColorSecondaryBrush"), VerticalAlignment = VerticalAlignment.Center,
+        };
+        var grid = new Grid { ColumnSpacing = 12 };
+        grid.ColumnDefinitions.Add(new ColumnDefinition());
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.Children.Add(box);
+        Grid.SetColumn(state, 1);
+        grid.Children.Add(state);
+        return new Border
+        {
+            Padding = new Thickness(52, 2, 60, 2), MinHeight = 44, BorderThickness = new Thickness(0, 1, 0, 0),
+            BorderBrush = Resource("DividerStrokeColorDefaultBrush"), Child = grid,
+        };
     }
 
     private static string Describe(HdrMonitor monitor, HdrActive? session, string running)
@@ -443,6 +497,20 @@ public sealed partial class HdrPage : UserControl
         try { await Task.Run(() => controller.SetGamesEnabledAsync(value)); }
         catch (Exception error) { ShowError(error); }
         finally { rendered = null; Render(controller.Snapshot); }
+    }
+    private async void TaskbarToggled(object sender, RoutedEventArgs e)
+    {
+        if (updating || controller is null) return;
+        bool value = TaskbarSwitch.IsOn;
+        TaskbarSwitch.IsEnabled = false;
+        try { await Task.Run(() => controller.SetTaskbarButtonsAsync(value)); }
+        catch (Exception error) { ShowError(error); }
+        finally { rendered = null; Render(controller.Snapshot); }
+    }
+    private void TaskbarExpandClick(object sender, RoutedEventArgs e)
+    {
+        taskbarExpanded = !taskbarExpanded;
+        ShowTaskbar();
     }
     private void GamesExpandClick(object sender, RoutedEventArgs e)
     {

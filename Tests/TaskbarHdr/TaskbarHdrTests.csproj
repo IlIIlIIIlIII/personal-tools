@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net8.0-windows10.0.19041.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <Platforms>x64</Platforms><PlatformTarget>x64</PlatformTarget><RootNamespace>PersonalTools</RootNamespace>
+    <!-- Per-monitor DPI like the app, or every taskbar but the primary reports virtualized coordinates. -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Sources/Windows/WinUI/TaskbarHdr.cs" Link="TaskbarHdr.cs"/>
+    <Compile Include="../../Sources/Windows/WinUI/TaskbarHdrPaint.cs" Link="TaskbarHdrPaint.cs"/>
+    <Compile Include="../../Sources/Windows/WinUI/TaskbarUia.cs" Link="TaskbarUia.cs"/>
+    <Compile Include="../../Sources/Windows/WinUI/HdrDisplay.cs" Link="HdrDisplay.cs"/>
+    <Compile Include="../../Sources/Windows/WinUI/HdrModels.cs" Link="HdrModels.cs"/>
+    <Compile Include="../../Sources/Windows/WinUI/DisplayPowerModels.cs" Link="DisplayPowerModels.cs"/>
+  </ItemGroup>
+</Project>

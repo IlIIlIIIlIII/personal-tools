@@ -51,6 +51,42 @@
         </Border>
       </StackPanel>
 
+      <!-- Taskbar buttons (design canvas https://claude.ai/artifact/M8LZqXcTbkkArBSbxrbSPG, board 05). -->
+      <StackPanel Spacing="4">
+        <TextBlock Text="작업표시줄 버튼" Style="{StaticResource GroupHeader}" Margin="0,8,0,4"/>
+        <StackPanel>
+          <Border x:Name="TaskbarHeader" Style="{StaticResource SettingCard}" CornerRadius="4,4,0,0">
+            <Grid ColumnSpacing="16">
+              <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+              <!-- The taskbar badge itself, at icon size. -->
+              <Border Width="22" Height="13" BorderThickness="1" CornerRadius="3" BorderBrush="{ThemeResource TextFillColorPrimaryBrush}" VerticalAlignment="Center">
+                <TextBlock Text="HDR" FontSize="7" FontWeight="Bold" CharacterSpacing="40" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                <TextBlock Text="모든 작업표시줄에 HDR 버튼 표시"/>
+                <TextBlock Style="{StaticResource CardDescription}" Text="모니터마다 시계 왼쪽에 둡니다. 누르면 그 모니터의 HDR만 켜고 끕니다."/>
+              </StackPanel>
+              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <ToggleSwitch x:Name="TaskbarSwitch" OnContent="켬" OffContent="끔" MinWidth="0" IsEnabled="False" Toggled="TaskbarToggled"
+                              AutomationProperties.Name="모든 작업표시줄에 HDR 버튼 표시"/>
+                <Button x:Name="TaskbarExpand" Style="{StaticResource SubtleIconButton}" Width="32" Height="32" Click="TaskbarExpandClick">
+                  <FontIcon x:Name="TaskbarChevron" Glyph="&#xE70E;" FontSize="12"/>
+                </Button>
+              </StackPanel>
+            </Grid>
+          </Border>
+          <Border x:Name="TaskbarBody" Style="{StaticResource ExpanderBody}" Padding="0">
+            <StackPanel>
+              <StackPanel x:Name="TaskbarList"/>
+              <Border BorderThickness="0,1,0,0" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" Padding="52,10,60,12">
+                <TextBlock Style="{StaticResource Footnote}" TextWrapping="WrapWholeWords"
+                           Text="HDR을 지원하지 않거나 작업표시줄이 없는 모니터에는 나타나지 않습니다. 전체 화면 게임 중에는 작업표시줄과 함께 숨습니다. 버튼을 오른쪽 클릭하면 Windows HDR 설정을 열 수 있습니다."/>
+              </Border>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </StackPanel>
+
       <StackPanel Spacing="4">
         <TextBlock Text="설치된 게임" Style="{StaticResource GroupHeader}" Margin="0,8,0,4"/>
         <StackPanel>

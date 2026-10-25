@@ -437,6 +437,15 @@ if (args.Contains("--integration"))
     File.Delete(childExe);
     Console.WriteLine("PASS master switch releases, blocks and re-applies");
 
+    await controller.SetTaskbarMonitorAsync("monitor-a", false);
+    await controller.SetTaskbarButtonsAsync(false);
+    Check(settings.Saved is { TaskbarButtons: false, TaskbarHidden: ["monitor-a"] } && controller.Snapshot is { TaskbarButtons: false, TaskbarHidden: ["monitor-a"] },
+        "taskbar settings not saved or published");
+    await controller.SetTaskbarMonitorAsync("MONITOR-A", true);
+    await controller.SetTaskbarButtonsAsync(true);
+    Check(settings.Saved is { TaskbarButtons: true, TaskbarHidden: [] } && controller.Snapshot.TaskbarButtons, "taskbar settings not restored");
+    Console.WriteLine("PASS taskbar button settings are saved and published");
+
     async Task Until(Func<bool> condition, string what)
     {
         var clock = Stopwatch.StartNew();

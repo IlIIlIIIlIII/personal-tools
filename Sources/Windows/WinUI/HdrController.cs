@@ -8,7 +8,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace PersonalTools;
 
-internal sealed class HdrController : IAsyncDisposable
+internal sealed class HdrController : IAsyncDisposable, ITaskbarHdrSource
 {
     // Libraries change only when a game is installed or removed; process polling stays at 1 s.
     private static readonly TimeSpan GameRescan = TimeSpan.FromMinutes(5);
@@ -188,7 +188,7 @@ internal sealed class HdrController : IAsyncDisposable
         var programStatus = programs.Select(p => new HdrProgramStatus(p, hits.Any(x => x.Hit!.Program?.Id == p.Id
             || x.Hit.Game is { } game && HdrMatcher.Claim(game, programs)?.Id == p.Id))).ToArray();
         Publish(new(display.Read(), programStatus, startupError ?? automation?.Error, null, Enabled: settings.Enabled, Active: active,
-            GamesEnabled: settings.Games, Games: gameStatus, GamesScannedAt: gamesScannedAt));
+            GamesEnabled: settings.Games, Games: gameStatus, GamesScannedAt: gamesScannedAt, TaskbarButtons: settings.TaskbarButtons, TaskbarHidden: settings.TaskbarHidden));
     }
     private static long Started(HdrProcess process) => long.TryParse(process.Key[(process.Key.IndexOf(':') + 1)..], out long ticks) ? ticks : 0;
     private void RescanGames()
@@ -211,6 +211,12 @@ internal sealed class HdrController : IAsyncDisposable
     {
         var off = (s.DisabledGames ?? []).Where(k => !string.Equals(k, key, StringComparison.OrdinalIgnoreCase));
         return s with { DisabledGames = (enabled ? off : off.Append(key)).ToArray() };
+    });
+    public Task SetTaskbarButtonsAsync(bool enabled) => UpdateSettingsAsync(s => s with { TaskbarButtons = enabled });
+    public Task SetTaskbarMonitorAsync(string id, bool shown) => UpdateSettingsAsync(s =>
+    {
+        var hidden = (s.TaskbarHidden ?? []).Where(k => !string.Equals(k, id, StringComparison.OrdinalIgnoreCase));
+        return s with { TaskbarHidden = (shown ? hidden : hidden.Append(id)).ToArray() };
     });
     public async Task RescanGamesAsync()
     {
