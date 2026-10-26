@@ -135,6 +135,8 @@ public sealed partial class MainWindow : Window
     {
         if (quitting) return;
         quitting = true;
+        // The logon task's every-minute runs leave the app closed for the rest of this sign-in.
+        QuitMarker.Set();
         try
         {
             taskbarHdr?.Dispose();

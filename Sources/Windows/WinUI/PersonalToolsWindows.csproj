@@ -24,6 +24,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Program.cs: a startup run from the logon task leaves before WinUI loads when there is nothing to do. -->
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
   </PropertyGroup>
   <!-- Set aside for now (2026-10-20 Windows scope): display power, vLLM and the microphone shortcut.
        Auto-HDR came back on 2026-10-21; DisplayPowerModels.cs stays only for the HDR snapshot wire format. -->
