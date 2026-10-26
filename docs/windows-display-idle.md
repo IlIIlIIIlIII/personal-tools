@@ -16,10 +16,15 @@ Windows에 "화면 켜 둠"을 요청해도 입력이 없으면 끕니다(2026-1
   `dark.json`, `log.txt`(256 KB 넘으면 앞 절반 삭제).
 
 ```json
-{"Enabled": true, "IdleSeconds": 60, "Monitors": ["MO32U24"]}
+{"IdleSeconds": 60, "Monitors": ["MO32U24"]}
 ```
 
 `Monitors`에는 모델 이름(같은 이름 전부) 또는 장치 경로를 넣습니다. `IdleSeconds`는 최소 10초입니다.
+
+사용 스위치는 `settings.json`이 아니라 휘발성 레지스트리 키 `HKCU\Software\PersonalTools\DisplayIdleOn`에 둡니다(있으면 켜짐).
+Windows를 다시 시작하거나 로그아웃하면 키가 사라져 꺼진 채로 시작하고, 사람이 페이지에서 직접 켭니다.
+같은 로그인 안에서 앱만 다시 시작될 때(작업 스케줄러의 재시작, 업데이트)는 켜진 상태가 유지됩니다(2026-10-26 사용자 결정).
+예전 파일에 남은 `Enabled` 값은 무시합니다.
 
 ## 화면 (2026-10-23, 시안 https://claude.ai/artifact/7dtoP5r9f84XYigQQUiJQE)
 
@@ -49,7 +54,7 @@ DDC/CI 응답 여부는 페이지를 열 때와 끌 때만 확인하며, 고른 
 ## 검증
 
 ```powershell
-dotnet run --project Tests\DisplayIdle\DisplayIdleTests.csproj -c Release            # 가짜 모니터로 상태 전환 14개
+dotnet run --project Tests\DisplayIdle\DisplayIdleTests.csproj -c Release            # 가짜 모니터로 상태 전환 등 23개
 dotnet run --project Tests\DisplayIdle\DisplayIdleTests.csproj -c Release -- --probe  # 대상 모니터 D6 읽기만
 dotnet run --project Tests\DisplayIdle\DisplayIdleTests.csproj -c Release -- --live 5 # 실제로 5초 끄고 켬, 사용자에게 먼저 알림
 ```

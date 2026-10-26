@@ -1,3 +1,4 @@
+using Microsoft.Win32;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -7,9 +8,11 @@ using System.Text.Json.Serialization;
 namespace PersonalTools;
 
 // Monitors holds friendly names (every monitor of that model) or device paths; null means MO32U24.
-public sealed record DisplayIdleSettings(bool Enabled = true, int IdleSeconds = 60, string[]? Monitors = null)
+// Enabled is not part of settings.json: DisplayIdleFiles keeps it for the current sign-in only.
+public sealed record DisplayIdleSettings(int IdleSeconds = 60, string[]? Monitors = null)
 {
     public static readonly string[] DefaultMonitors = ["MO32U24"];
+    [JsonIgnore] public bool Enabled { get; init; }
     [JsonIgnore] public IReadOnlyCollection<string> Selectors => Monitors ?? DefaultMonitors;
     [JsonIgnore] public long IdleMilliseconds => Math.Max(IdleSeconds, 10) * 1000L;
     internal bool Selects(DisplayInfo monitor) => !monitor.Internal && Selectors.Any(s =>
@@ -23,24 +26,41 @@ public sealed record DisplayIdleSnapshot(DisplayIdleSettings Settings, DisplayId
     bool Dark = false, DateTime? DarkSince = null, int DarkCount = 0, string? Error = null);
 
 // settings.json, dark.json (monitors this app turned off, so a restart can turn them back on) and
-// log.txt under %LOCALAPPDATA%\PersonalTools\DisplayIdle.
-internal sealed class DisplayIdleFiles(string? folder = null)
+// log.txt under %LOCALAPPDATA%\PersonalTools\DisplayIdle. The on switch is a volatile key under HKCU
+// instead: restarting Windows or signing out removes it, so the feature starts off until someone
+// turns it on by hand, while an app restart in the same sign-in (the task's restart, an update)
+// keeps it (the user's choice, 2026-10-26).
+internal sealed class DisplayIdleFiles(string? folder = null, string onKey = @"Software\PersonalTools\DisplayIdleOn")
 {
     private const long LogLimit = 256 * 1024;
     public string Folder { get; } = folder ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PersonalTools", "DisplayIdle");
+    public string OnKey { get; } = onKey;
     public string SettingsPath => Path.Combine(Folder, "settings.json");
     private string DarkPath => Path.Combine(Folder, "dark.json");
     public string LogPath => Path.Combine(Folder, "log.txt");
 
     public DateTime SettingsStamp => File.GetLastWriteTimeUtc(SettingsPath);
-    public DisplayIdleSettings LoadSettings() => File.Exists(SettingsPath)
-        ? JsonSerializer.Deserialize<DisplayIdleSettings>(File.ReadAllText(SettingsPath)) ?? new() : new();
+    public DisplayIdleSettings LoadSettings() => (File.Exists(SettingsPath)
+        ? JsonSerializer.Deserialize<DisplayIdleSettings>(File.ReadAllText(SettingsPath)) ?? new() : new()) with { Enabled = IsOn };
     public void SaveSettings(DisplayIdleSettings settings)
     {
         Directory.CreateDirectory(Folder);
         var temp = SettingsPath + ".tmp";
         File.WriteAllText(temp, JsonSerializer.Serialize(settings));
         File.Move(temp, SettingsPath, true);
+        SetOn(settings.Enabled);
+    }
+    private bool IsOn
+    {
+        get { using var key = Registry.CurrentUser.OpenSubKey(OnKey); return key is not null; }
+    }
+    private void SetOn(bool on)
+    {
+        if (!on) { Registry.CurrentUser.DeleteSubKey(OnKey, false); return; }
+        // The parent is created first so it stays a normal key; only the marker is volatile.
+        int split = OnKey.LastIndexOf('\\');
+        using var parent = Registry.CurrentUser.CreateSubKey(OnKey[..split]);
+        parent.CreateSubKey(OnKey[(split + 1)..], true, RegistryOptions.Volatile).Dispose();
     }
     public DisplayTarget[] LoadDark() => File.Exists(DarkPath) ? JsonSerializer.Deserialize<DisplayTarget[]>(File.ReadAllText(DarkPath)) ?? [] : [];
     public void SaveDark(IReadOnlyCollection<DisplayTarget> targets)
@@ -165,12 +185,13 @@ internal sealed class DisplayIdleController : IDisposable
 
     internal void Tick(long now)
     {
+        // Settings first, so a command on the first tick does not save over them with the defaults.
+        ReloadSettings(now);
         while (commands.TryDequeue(out var command))
         {
             try { command(now); }
             catch (Exception e) { error = e.Message; files.Log("명령 실패: " + e.Message); Publish(); }
         }
-        ReloadSettings(now);
         long last = input.LastInput(now);
         Interlocked.Exchange(ref lastInput, last);
         if (Dark)

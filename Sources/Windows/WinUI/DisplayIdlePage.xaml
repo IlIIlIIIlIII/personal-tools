@@ -25,7 +25,7 @@
           <FontIcon Glyph="&#xE708;" FontSize="20"/>
           <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
             <TextBlock Text="화면 자동 끄기 사용"/>
-            <TextBlock Style="{StaticResource CardDescription}" Text="끄면 입력이 없어도 모니터를 끄지 않습니다."/>
+            <TextBlock Style="{StaticResource CardDescription}" Text="끄면 입력이 없어도 모니터를 끄지 않습니다. Windows를 다시 시작하면 꺼진 채로 시작합니다."/>
           </StackPanel>
           <ToggleSwitch x:Name="EnabledSwitch" Grid.Column="2" OnContent="켬" OffContent="끔" MinWidth="0" IsEnabled="False" Toggled="EnabledToggled"
                         AutomationProperties.Name="화면 자동 끄기 사용"/>

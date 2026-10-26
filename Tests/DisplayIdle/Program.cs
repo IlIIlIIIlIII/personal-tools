@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text.Json;
+using Microsoft.Win32;
 using PersonalTools;
 
 // --probe reads every monitor's power mode. --live [seconds] really turns the MO32U24 pair off and on,
@@ -48,11 +48,13 @@ var lower = new DisplayInfo(@"\\?\DISPLAY#GBT3219#5&2eb3797f&0&UID8448" + Guid, 
 var upper = new DisplayInfo(@"\\?\DISPLAY#GBT3219#5&2eb3797f&0&UID8452" + Guid, "MO32U24", "MO32U24 · 3", 10, false, 0, -1440, 2560, 1440);
 var side = new DisplayInfo(@"\\?\DISPLAY#COS3150#5&2eb3797f&0&UID8454" + Guid, "32RTX950", "32RTX950", 10, false, -1440, -1961, 1440, 2560);
 var laptop = new DisplayInfo(@"\\?\DISPLAY#BOE0D5B#4&36b9ac&0&UID8388688" + Guid, "NE18NZ2", "내장 디스플레이", 0x80000000, false, 2560, -1440, 1920, 1200);
-(DisplayIdleController, Displays, Input, DisplayIdleFiles) Make(Action<Displays>? setup = null, DisplayIdleSettings? settings = null)
+// The on switch of each test lives under this key; removed when the tests end.
+const string TestKeys = @"Software\PersonalTools\DisplayIdleTests";
+(DisplayIdleController, Displays, Input, DisplayIdleFiles) Make(Action<Displays>? setup = null, DisplayIdleSettings? settings = null, bool on = true)
 {
-    var folder = Path.Combine(Path.GetTempPath(), "PersonalToolsDisplayIdleTests", System.Guid.NewGuid().ToString("N"));
-    var files = new DisplayIdleFiles(folder);
-    if (settings is not null) { Directory.CreateDirectory(folder); File.WriteAllText(files.SettingsPath, JsonSerializer.Serialize(settings)); }
+    string id = System.Guid.NewGuid().ToString("N");
+    var files = new DisplayIdleFiles(Path.Combine(Path.GetTempPath(), "PersonalToolsDisplayIdleTests", id), $@"{TestKeys}\{id}");
+    files.SaveSettings((settings ?? new()) with { Enabled = on });
     var displays = new Displays([upper, lower, side, laptop]);
     setup?.Invoke(displays);
     var input = new Input();
@@ -116,24 +118,49 @@ Test("panel that ignored the off command gets it once more", () =>
     c.Tick(Minute + 2_000); Check(d.Power[upper.Id] == 4 && d.Writes.Count(w => w == upper.Id + ":5") == 2, "no second off");
     c.Tick(Minute + 4_000); Check(d.Writes.Count(w => w == upper.Id + ":5") == 2, "verified twice");
 });
-Test("settings file: disabled, longer timeout, other monitors", () =>
+Test("settings file: longer timeout, other monitors, but not the on switch", () =>
 {
-    var (c, d, i, f) = Make(settings: new(Enabled: false));
+    var (c, d, i, f) = Make(on: false);
     c.Tick(10 * Minute); Check(!c.Dark && d.Writes.Count == 0, "disabled still darkened");
-    File.WriteAllText(f.SettingsPath, JsonSerializer.Serialize(new DisplayIdleSettings(IdleSeconds: 120, Monitors: [side.Name])));
+    Check(!File.ReadAllText(f.SettingsPath).Contains("Enabled"), "on switch written to the file");
+    File.WriteAllText(f.SettingsPath, """{"Enabled": true, "IdleSeconds": 120, "Monitors": ["32RTX950"]}""");
     File.SetLastWriteTimeUtc(f.SettingsPath, DateTime.UtcNow.AddSeconds(5));
-    i.Last = 20 * Minute;
-    c.Tick(20 * Minute + 6_000 + Minute); Check(!c.Dark, "used the old timeout");
-    c.Tick(22 * Minute + 1); Check(c.Dark && d.Power[side.Id] == 4 && d.Power[upper.Id] == 1, "wrong monitors");
+    c.Tick(10 * Minute + 6_000);
+    Check(!c.Dark && c.Snapshot.Settings is { Enabled: false, IdleSeconds: 120 }, "file not read or its Enabled used");
+    c.SetEnabled(true); i.Last = 20 * Minute;
+    c.Tick(20 * Minute + Minute); Check(!c.Dark, "used the old timeout");
+    c.Tick(22 * Minute); Check(c.Dark && d.Power[side.Id] == 4 && d.Power[upper.Id] == 1, "wrong monitors");
 });
 Test("turning the feature off while dark wakes the panels", () =>
 {
-    var (c, d, i, f) = Make(settings: new());
+    var (c, d, i, f) = Make();
     c.Tick(Minute); Check(c.Dark, "not dark");
     c.SetEnabled(false); c.Tick(Minute + 100);
     Check(!c.Dark && d.Power[upper.Id] == 1 && d.Power[lower.Id] == 1, "still dark");
     Check(c.Snapshot.Recent[0].Text.StartsWith("기능 꺼짐 → "), "wake reason");
-    Check(!JsonSerializer.Deserialize<DisplayIdleSettings>(File.ReadAllText(f.SettingsPath))!.Enabled, "not saved");
+    Check(!f.LoadSettings().Enabled, "not saved");
+});
+Test("an app restart in the same sign-in keeps the feature on", () =>
+{
+    var (_, d, i, f) = Make();
+    var restarted = new DisplayIdleController(d, i, f, _ => { });
+    restarted.Tick(Minute); Check(restarted.Dark, "turned off by the restart");
+});
+Test("restarting Windows starts with the feature off: the on switch is a volatile key", () =>
+{
+    var (_, d, i, f) = Make(settings: new(IdleSeconds: 300));
+    using (var key = Registry.CurrentUser.OpenSubKey(f.OnKey, true)!)
+    {
+        // Windows refuses a normal key under a volatile one.
+        bool isVolatile = false;
+        try { key.CreateSubKey("child").Dispose(); } catch (IOException) { isVolatile = true; }
+        Check(isVolatile, "on switch would survive a restart");
+    }
+    Registry.CurrentUser.DeleteSubKey(f.OnKey);
+    var booted = new DisplayIdleController(d, i, f, _ => { });
+    booted.Tick(10 * Minute);
+    Check(!booted.Dark && booted.Snapshot.Settings is { Enabled: false, IdleSeconds: 300 }, "not off, or the wait time was lost");
+    booted.SetEnabled(true); booted.Tick(10 * Minute + 1); Check(booted.Dark, "turning it on by hand");
 });
 Test("timeout is never shorter than 10 seconds", () =>
 {
@@ -175,7 +202,7 @@ Test("page: 지금 끄기 ignores the hand still on the mouse", () =>
 });
 Test("page: 지금 끄기 does nothing while the feature is off", () =>
 {
-    var (c, d, _, _) = Make(settings: new(Enabled: false));
+    var (c, d, _, _) = Make(on: false);
     c.Tick(0); c.DarkenNow(); c.Tick(1); Check(!c.Dark && d.Writes.Count == 0, "darkened while off");
 });
 Test("page: snapshot lists monitors, states and recent events", () =>
@@ -228,6 +255,7 @@ Test("real input clock and monitor list are sane", () =>
     var list = new DisplayDdc().List();
     Check(list.Count(m => m.Primary) == 1 && list.All(m => m.Width > 0 && m.Label.Length > 0), "monitor list");
 });
+Registry.CurrentUser.DeleteSubKeyTree(TestKeys, false);
 Console.WriteLine($"{passed} passed");
 
 sealed class Displays(DisplayInfo[] monitors) : IDisplayPowerControl
