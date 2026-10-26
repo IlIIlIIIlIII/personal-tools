@@ -8,11 +8,13 @@ $directory = Join-Path $env:ProgramFiles 'PersonalTools'
 $backupPath = Join-Path $directory 'installation-backup.clixml'
 if (-not (Test-Path -LiteralPath $backupPath)) { throw 'No installation backup found. No audio settings changed.' }
 # Prevent a concurrent repair from re-applying effects during rollback.
-$task = Get-ScheduledTask -TaskName 'PersonalTools Device Recovery' -ErrorAction SilentlyContinue
-if ($task) {
-    Disable-ScheduledTask -InputObject $task | Out-Null
-    Stop-ScheduledTask -InputObject $task
-    Unregister-ScheduledTask -InputObject $task -Confirm:$false
+foreach ($name in @('PersonalTools Device Recovery','PersonalTools Microphone Recovery')) {
+    $task = Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue
+    if ($task) {
+        Disable-ScheduledTask -InputObject $task | Out-Null
+        Stop-ScheduledTask -InputObject $task
+        Unregister-ScheduledTask -InputObject $task -Confirm:$false
+    }
 }
 $lock = [IO.File]::Open((Join-Path $directory 'device-recovery.lock'),'OpenOrCreate','ReadWrite','None')
 try {

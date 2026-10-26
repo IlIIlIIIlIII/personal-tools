@@ -42,7 +42,7 @@ foreach ($endpoint in @($render,$capture)) {
         $key.Close()
     }
 }
-$payload = @('PersonalToolsAPO.dll','PersonalToolsSetup.exe','install-windows.ps1','uninstall-windows.ps1','WindowsInstall.psm1','WindowsDeviceRecovery.psm1','repair-windows-device.ps1','repair-windows-capture.ps1','register-windows-device-recovery.ps1','ui')
+$payload = @('PersonalToolsAPO.dll','PersonalToolsSetup.exe','install-windows.ps1','uninstall-windows.ps1','WindowsInstall.psm1','WindowsDeviceRecovery.psm1','repair-windows-device.ps1','repair-windows-capture.ps1','repair-windows-microphone.ps1','register-windows-device-recovery.ps1','ui')
 $signed = @('PersonalToolsAPO.dll','PersonalToolsSetup.exe','ui\PersonalToolsBridge.dll','ui\PersonalToolsWindows.exe','ui\PersonalToolsWindows.dll')
 # NPU inference runs in PersonalToolsNpuHost.exe beside the payload, never inside audiodg.
 if(Test-Path -LiteralPath (Join-Path $SourceDirectory 'npu\enabled.flag')) { $payload += @('npu','PersonalToolsNpuHost.exe'); $signed += 'PersonalToolsNpuHost.exe' }
@@ -132,6 +132,7 @@ try {
     $failure = $_
     try {
         Unregister-ScheduledTask -TaskName 'PersonalTools Device Recovery' -Confirm:$false -ErrorAction SilentlyContinue
+        Unregister-ScheduledTask -TaskName 'PersonalTools Microphone Recovery' -Confirm:$false -ErrorAction SilentlyContinue
         Restore-RegistryValues $original; Remove-Item -LiteralPath $backupPath
     }
     catch { throw "Installation failed ($failure); rollback also failed ($_). Keep $backupPath and run uninstall-windows.ps1 elevated." }

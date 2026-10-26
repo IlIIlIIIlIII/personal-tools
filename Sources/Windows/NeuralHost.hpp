@@ -5,6 +5,7 @@
 #include "NeuralIpc.hpp"
 #include "RealtimeThread.hpp"
 #include "EchoDelay.hpp"
+#include "MicTiming.hpp"
 #include "DtlnNpu.hpp"
 #include "AEC.hpp"
 #include <algorithm>
@@ -80,13 +81,16 @@ public:
     static constexpr std::chrono::milliseconds maxRetryDelay{30000};
     using Log=std::function<void(const std::string&)>;
     using DelayChanged=std::function<void(int microseconds)>;
+    using Stalled=std::function<void(double ratio)>;
     // initialDelayUs: echo delay measured earlier for the current output device (-1 = unknown);
     // delayChanged is told when a channel adopts a different one, to keep it for next time.
+    // stalled is told (at most once a minute) when a microphone stream's timestamps stop matching
+    // its samples (MicTiming.hpp), so the device can be restarted.
     NeuralHost(std::filesystem::path folder,std::wstring section=neural::Mapping::defaultName(),
                std::chrono::milliseconds retryDelay=std::chrono::milliseconds(1000),Log log={},
-               int initialDelayUs=-1,DelayChanged delayChanged={})
+               int initialDelayUs=-1,DelayChanged delayChanged={},Stalled stalled={})
         :folder_(std::move(folder)),section_(std::move(section)),retryDelay_(retryDelay),log_(std::move(log)),
-         delayChanged_(std::move(delayChanged)),knownDelay_(initialDelayUs<0?-1:initialDelayUs*16/1000),supervisor_([this]{supervise();}){}
+         delayChanged_(std::move(delayChanged)),stalled_(std::move(stalled)),knownDelay_(initialDelayUs<0?-1:initialDelayUs*16/1000),supervisor_([this]{supervise();}){}
     ~NeuralHost(){quit_.store(true);if(supervisor_.joinable())supervisor_.join();}
     NeuralHost(const NeuralHost&)=delete;
     bool attached()const{return attached_.load();}
@@ -104,6 +108,7 @@ private:
         std::uint64_t expected=0,base=0,processed=0,referenceEnd=0;unsigned count=0;bool unreferenced=false;
         // Microphone time expected for `stampIndex`, following slow clock drift (see step()).
         std::uint64_t stampTime=0,stampIndex=0;bool stamped=false;
+        MicTiming timing;
     };
     void report(const std::string& message){if(log_)try{log_(message);}catch(...){}}
     bool pause(std::chrono::milliseconds delay,neural::Channel* channel=nullptr){
@@ -221,6 +226,11 @@ private:
             else s.stampTime=static_cast<std::uint64_t>(expectedTime+deviation/16);
         }else{s.stampTime=p.time;s.stamped=true;}
         s.stampIndex=p.index;
+        if(s.timing.add(p.index,p.time,p.frames)){
+            report("microphone stalled: timestamps span "+std::to_string(s.timing.lastRatio())+"x its samples");
+            std::uint64_t last=lastStall_.load();const std::uint64_t now=GetTickCount64();
+            if(stalled_&&(last==0||now-last>=60000)&&lastStall_.compare_exchange_strong(last,now))try{stalled_(s.timing.lastRatio());}catch(...){}
+        }
         s.unreferenced=s.unreferenced||!available;
         for(unsigned i=0;i<p.frames;++i){
             const float m=s.micFir.tick(p.samples[i]),f=s.refFir.tick(available?s.left[i]:0.f);
@@ -254,8 +264,9 @@ private:
         }
         return true;
     }
-    std::filesystem::path folder_;std::wstring section_;std::chrono::milliseconds retryDelay_;Log log_;DelayChanged delayChanged_;
+    std::filesystem::path folder_;std::wstring section_;std::chrono::milliseconds retryDelay_;Log log_;DelayChanged delayChanged_;Stalled stalled_;
     std::atomic<int> knownDelay_; // 16 kHz samples, shared by the channels
+    std::atomic<std::uint64_t> lastStall_{0}; // GetTickCount64 of the last stalled_ call, shared by the channels
     std::atomic<bool> quit_{false},attached_{false};
     // Constructed last: the supervisor must not observe uninitialized members.
     std::thread supervisor_;

@@ -10,7 +10,7 @@ $backupPath = Join-Path $destination 'installation-backup.clixml'
 $installation = Import-Clixml -LiteralPath $backupPath
 if ($installation.Version -ne 1) { throw 'Unsupported installation.' }
 $source = (Resolve-Path -LiteralPath $SourceDirectory).Path
-$files = @('PersonalToolsSetup.exe','WindowsInstall.psm1','WindowsDeviceRecovery.psm1','install-windows.ps1','uninstall-windows.ps1','repair-windows-device.ps1','register-windows-device-recovery.ps1',
+$files = @('PersonalToolsSetup.exe','WindowsInstall.psm1','WindowsDeviceRecovery.psm1','install-windows.ps1','uninstall-windows.ps1','repair-windows-device.ps1','repair-windows-microphone.ps1','register-windows-device-recovery.ps1',
     'ui\PersonalToolsBridge.dll','ui\PersonalToolsWindows.exe','ui\PersonalToolsWindows.dll','ui\PersonalToolsWindows.deps.json','ui\PersonalToolsWindows.runtimeconfig.json','ui\PersonalToolsWindows.pri')
 foreach ($file in $files) {
     $path = Join-Path $source $file

@@ -60,6 +60,11 @@ public sealed partial class MainWindow : Window
 
         try { tray = new TrayIcon(WindowNative.GetWindowHandle(this), () => DispatcherQueue.TryEnqueue(Show), () => DispatcherQueue.TryEnqueue(Quit)); }
         catch { tray = null; }
+        audio.MicrophoneRecoveryChanged += notice =>
+        {
+            tray?.Notify(notice.Title, notice.Text, notice.Warning);
+            if (notice.Relaunch.Length > 0) _ = Task.Run(() => MicrophoneRecovery.Relaunch(notice.Relaunch));
+        };
         AppWindow.Closing += (_, e) =>
         {
             if (!quitting && tray?.Available == true) { e.Cancel = true; AppWindow.Hide(); }

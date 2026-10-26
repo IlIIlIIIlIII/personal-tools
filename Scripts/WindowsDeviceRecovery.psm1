@@ -92,4 +92,24 @@ function Get-RecoveryEqChanges([string]$Path) {
         [pscustomobject]@{Path=$Path;Name='{1da5d803-d492-4edd-8c23-e0c0ffee7f0e},5';Kind='DWord';Value=0}
     )
 }
-Export-ModuleMember -Function Get-RenderIdentity,Select-RenderIdentity,Get-ActiveRenderIdentities,Save-RecoveryBackup,Get-RecoveryEqChanges
+# The whole USB device behind a capture endpoint (e.g. USB\VID_07FD&PID_000B\M2MA06EADL for the
+# MOTU M Series), which repair-windows-microphone.ps1 restarts. Resolved once at registration:
+# PnP property queries can take minutes while the device's stream is stuck.
+function Get-CaptureDevice([string]$EndpointId) {
+    if ($EndpointId -notmatch '^\{0\.0\.1\.00000000\}\.\{[0-9a-f-]{36}\}$') { throw 'Invalid capture endpoint.' }
+    $node = 'SWD\MMDEVAPI\' + $EndpointId
+    for ($depth = 0; $depth -lt 10 -and $node; $depth++) {
+        if ($node -match '^USB\\VID_[0-9A-F]{4}&PID_[0-9A-F]{4}\\') { return $node }
+        $node = [string](Get-PnpDeviceProperty -InstanceId $node -KeyName 'DEVPKEY_Device_Parent' -ErrorAction Stop).Data
+    }
+    throw 'The capture endpoint is not on a USB device.'
+}
+
+# Vendor helpers (control panel app, policy service) that keep a USB audio device open, by USB
+# vendor id. While they run, restarting the device needs a reboot (seen 2026-10-24 with MOTU).
+function Get-DeviceHelperFolder([string]$Instance) {
+    $vendors = @{ '07FD' = 'MOTU' }
+    if ($Instance -match '^USB\\VID_([0-9A-F]{4})&') { return $vendors[$Matches[1]] }
+    $null
+}
+Export-ModuleMember -Function Get-RenderIdentity,Select-RenderIdentity,Get-ActiveRenderIdentities,Save-RecoveryBackup,Get-RecoveryEqChanges,Get-CaptureDevice,Get-DeviceHelperFolder

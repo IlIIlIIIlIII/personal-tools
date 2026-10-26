@@ -23,3 +23,27 @@ $triggers = @((New-ScheduledTaskTrigger -AtStartup), (New-ScheduledTaskTrigger -
 $settings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 2)
 Register-ScheduledTask -TaskName 'PersonalTools Device Recovery' -Action $action -Trigger $triggers -Settings $settings -User 'SYSTEM' -RunLevel Highest -Force | Out-Null
 Write-Output 'Device recovery registered: startup and once per minute; audio restarts only when an endpoint changes.'
+
+# Microphone recovery (repair-windows-microphone.ps1): the USB device behind the selected
+# microphone is resolved now, while it works; PnP queries can take minutes once its stream is stuck.
+$microphone = Join-Path $directory 'repair-windows-microphone.ps1'
+if (Test-Path -LiteralPath $microphone) {
+    if (-not $backup.PSObject.Properties['CaptureDevice'] -or -not $backup.CaptureDevice) {
+        $device = $null
+        try { $device = Get-CaptureDevice $backup.CaptureId } catch { Write-Warning "Microphone recovery is not available: $_" }
+        if ($device) { $backup | Add-Member -NotePropertyName CaptureDevice -NotePropertyValue $device -Force; Save-RecoveryBackup $backup $backupPath }
+    }
+    if ($backup.PSObject.Properties['CaptureDevice'] -and $backup.CaptureDevice) {
+        # The NPU host (signed-in user) reports a stall as Application event 7001 from this source.
+        if (-not [Diagnostics.EventLog]::SourceExists('PersonalTools')) { New-EventLog -LogName Application -Source 'PersonalTools' }
+        $class = Get-CimClass -ClassName MSFT_TaskEventTrigger -Namespace Root/Microsoft/Windows/TaskScheduler
+        $stall = New-CimInstance -CimClass $class -ClientOnly
+        $stall.Enabled = $true
+        $stall.Subscription = '<QueryList><Query Id="0" Path="Application"><Select Path="Application">*[System[Provider[@Name=''PersonalTools''] and EventID=7001]]</Select></Query></QueryList>'
+        $micAction = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -Argument ('-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + $microphone + '"')
+        $micTriggers = @($stall, (New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5)))
+        $micSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 3)
+        Register-ScheduledTask -TaskName 'PersonalTools Microphone Recovery' -Action $micAction -Trigger $micTriggers -Settings $micSettings -User 'SYSTEM' -RunLevel Highest -Force | Out-Null
+        Write-Output "Microphone recovery registered for $($backup.CaptureDevice): on a stall event and every 5 minutes."
+    }
+}

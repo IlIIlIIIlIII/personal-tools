@@ -30,7 +30,19 @@ internal sealed class AudioController : IDisposable
         catch (Exception error) { Error = error.Message; }
         timer = dispatcher.CreateTimer();
         timer.Interval = TimeSpan.FromSeconds(1);
-        timer.Tick += async (_, _) => await RefreshAsync();
+        timer.Tick += async (_, _) => { CheckMicrophoneRecovery(); await RefreshAsync(); };
+    }
+    private string? microphoneRecovery;
+    public event Action<MicrophoneRecoveryNotice>? MicrophoneRecoveryChanged;
+    // The first read only remembers the line, so restarting the app does not repeat an old notice.
+    private void CheckMicrophoneRecovery()
+    {
+        string status;
+        try { var path = Path.Combine(InstallDirectory, "microphone-recovery-status.txt"); status = File.Exists(path) ? File.ReadAllText(path) : ""; }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { return; }
+        if (microphoneRecovery is null || status == microphoneRecovery) { microphoneRecovery = status; return; }
+        microphoneRecovery = status;
+        if (MicrophoneRecovery.Describe(status) is { } notice) MicrophoneRecoveryChanged?.Invoke(notice);
     }
     private static string AudioPath(Environment.SpecialFolder folder, string marker)
     {

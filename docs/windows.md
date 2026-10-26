@@ -32,6 +32,21 @@ Windows 11 x64에서 **SMSL USB DAC 스피커 EQ + MOTU M Series 입력 1 반향
 
 작업은 SYSTEM 권한으로 실행하지만 실행 코드·장치 식별 정보·복원 기록은 관리자만 쓸 수 있는 Program Files에 보관한다. 사용자 쓰기 가능한 설정에서 명령이나 경로를 받아 실행하지 않는다. 제거 시 자동 복구 작업을 중지·삭제하고, 자동으로 등록한 출력들의 원래 효과 설정도 복원한다. 상태는 앱의 장치 안내와 진단 기록, `C:\Program Files\PersonalTools\device-recovery-status.txt`에서 확인한다.
 
+## 마이크 자동 복구
+
+MOTU M Series는 2026-10-24부터 Call of Duty가 멈칫한 뒤 입력이 고장 난 채로 남는 일이 있었다. 샘플은 2/3만 오고 패킷 타임스탬프는 그 샘플 시간의 1.5배로 벌어지며, 같은 버퍼가 반복된다. NPU 호스트는 마이크 패킷마다 타임스탬프 간격과 샘플 수를 비교한다(`MicTiming.hpp`). 3초 구간 둘이 연달아 1.25배를 넘거나 0.8배에 못 미치면 Application 로그에 `PersonalTools` 이벤트 7001을 남긴다. 정상 녹음(10-21 두 시간 포함)에서는 0.996–1.000이었고, 실제 고장 녹음에서는 4–6초 안에 감지했다.
+
+설치 시 등록되는 SYSTEM 작업 `PersonalTools Microphone Recovery`는 이 이벤트가 나올 때와 5분마다 `repair-windows-microphone.ps1`을 실행한다. 스크립트는 먼저 `PersonalToolsSetup.exe --check-microphone`으로 공유 메모리를 8초간 직접 읽는다. 정상(0), 마이크 스트림 없음(3), 섹션 없음(4)이면 아무것도 하지 않는다. 고장(10)일 때만 다음 순서로 복구한다.
+
+1. 장치를 붙잡고 있는 제조사 도우미를 닫는다. MOTU는 `MOTUMSeries.exe`와 `MOTUCoreUACAudioPolicyMediator`다.
+2. Windows Audio를 멈춘다.
+3. 등록 때 저장한 USB 장치(`CaptureDevice`)를 `pnputil /restart-device`로 다시 시작한다.
+4. 서비스를 다시 켠다.
+
+복구하는 동안 20초쯤 소리가 끊긴다. 마지막 시도 후 3분 안에는 다시 시도하지 않는다. 1시간에 4번을 넘기면 멈추고 USB 케이블을 다시 꽂으라고 알린다.
+
+앱은 `microphone-recovery-status.txt`가 바뀔 때마다 트레이 알림을 띄운다. 알림은 복구 중, 복구됨, 실패, 멈춤 네 가지다. 복구가 끝나면 닫았던 도우미 프로그램을 사용자 세션에서 다시 실행한다. 이때 Program Files 아래 프로그램만 실행한다. 실행마다 남는 기록은 `microphone-recovery.log`에 있다.
+
 기존 설치는 관리자 PowerShell에서 `Scripts/update-windows-device-recovery.ps1 -SourceDirectory <새 빌드 패키지>`로 갱신한다. APO와 NPU 모델은 교체하지 않는다. 새 설치에는 자동 복구 도구가 포함된다.
 
 ## 설정 UI 디자인

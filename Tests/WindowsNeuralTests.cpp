@@ -60,6 +60,41 @@ static int runCall(personaltools::win::EchoDelayEstimator& e,int seconds,int ech
 
 int main(){
     {
+        // Microphone packets of 480 frames (10 ms at 48 kHz); `step` is the packet timestamp advance.
+        using personaltools::win::MicTiming;
+        struct Feed{MicTiming t;std::uint64_t index=0,time=1000000000;int reported=0;
+            void run(int packets,const std::function<std::uint64_t(int)>& step){for(int n=0;n<packets;++n){if(t.add(index,time,480))++reported;index+=480;time+=step(n);}}};
+        {
+            // 10 minutes with ±2 ms jitter and a clock 0.1 % off: never a stall.
+            Feed f;std::mt19937 random(5);std::uniform_int_distribution<int> jitter(-20000,20000);
+            f.run(60000,[&](int){return static_cast<std::uint64_t>(100100+jitter(random));});
+            if(f.reported||f.t.stalled()){printf("ratio %.3f\n",f.t.lastRatio());puts("A healthy microphone was taken for a stalled one");return 1;}
+        }
+        for(const std::uint64_t step:{150000ull,200000ull}) {
+            // 2026-10-24/25 MOTU: 2/3 (or 1/2) of the samples, timestamps 1.5x (2x) the samples' time.
+            Feed f;f.run(500,[](int){return std::uint64_t{100000};});
+            f.run(1000,[&](int){return step;});
+            if(f.reported!=1||!f.t.stalled()){printf("step %llu reported %d ratio %.3f\n",static_cast<unsigned long long>(step),f.reported,f.t.lastRatio());puts("A stalled microphone was not reported exactly once");return 1;}
+            // Within two 3 s windows of stalled time (plus the window it started in).
+            Feed g;g.run(500,[](int){return std::uint64_t{100000};});int at=-1;
+            for(int n=0;n<1000&&at<0;++n){g.run(1,[&](int){return step;});if(g.reported)at=n;}
+            if(at<0||at*step>3*30000000ull){printf("reported after %d packets\n",at);puts("A stalled microphone was reported too late");return 1;}
+        }
+        {
+            // One freeze of 2 s without lost samples spoils one window, not two.
+            Feed f;f.run(600,[](int n){return n==400?std::uint64_t{20000000}:std::uint64_t{100000};});
+            if(f.reported||f.t.stalled()){puts("A single freeze was taken for a stalled microphone");return 1;}
+        }
+        {
+            // A new stream (index does not continue) starts over.
+            Feed f;f.run(1000,[](int){return std::uint64_t{150000};});
+            if(!f.t.stalled()){puts("Stall not detected before the restart");return 1;}
+            f.index+=48000*5;f.run(1000,[](int){return std::uint64_t{100000};});
+            if(f.t.stalled()||f.reported!=1){puts("A restarted microphone stayed stalled");return 1;}
+        }
+        puts("Microphone timestamp stall detection passed");
+    }
+    {
         using personaltools::win::EchoDelayEstimator;
         constexpr int margin=EchoDelayEstimator::marginSamples;
         // Playback in 1.5 s parts with 1.2 s silences (where a new shift may be applied).

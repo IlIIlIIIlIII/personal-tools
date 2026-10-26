@@ -50,6 +50,14 @@ internal sealed class TrayIcon : IDisposable
         }
         return DefSubclassProc(hwnd, message, wParam, lParam);
     }
+    // NIM_MODIFY with NIF_INFO; Windows shows it as a notification from this icon.
+    public void Notify(string title, string text, bool warning)
+    {
+        if (!Available) return;
+        var info = icon;
+        info.Flags = 0x10; info.InfoTitle = title; info.Info = text; info.InfoFlags = warning ? 2u : 1u;
+        Shell_NotifyIcon(1, ref info);
+    }
     public void Dispose()
     {
         Shell_NotifyIcon(2, ref icon);

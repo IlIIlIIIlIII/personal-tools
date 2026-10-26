@@ -15,7 +15,8 @@ add_executable(PersonalToolsNpuHost WIN32 NpuHost.cpp)
 target_link_libraries(PersonalToolsNpuHost PRIVATE PersonalToolsWindowsShared)
 add_executable(PersonalToolsSetup WIN32 Setup.cpp)
 target_compile_definitions(PersonalToolsSetup PRIVATE UNICODE _UNICODE NOMINMAX WIN32_LEAN_AND_MEAN)
-target_link_libraries(PersonalToolsSetup PRIVATE ole32 shell32)
+# PersonalToolsWindowsShared for the NeuralIpc/MicTiming headers of --check-microphone.
+target_link_libraries(PersonalToolsSetup PRIVATE PersonalToolsWindowsShared ole32 shell32)
 if(MINGW)
     target_link_options(PersonalToolsNpuHost PRIVATE -municode -static)
     target_link_options(PersonalToolsSetup PRIVATE -municode -static)
@@ -32,7 +33,8 @@ install(TARGETS PersonalToolsSetup PersonalToolsAPO PersonalToolsNpuHost RUNTIME
 install(TARGETS PersonalToolsBridge RUNTIME DESTINATION ui LIBRARY DESTINATION ui)
 install(FILES "${PROJECT_SOURCE_DIR}/Scripts/install-windows.ps1" "${PROJECT_SOURCE_DIR}/Scripts/uninstall-windows.ps1" "${PROJECT_SOURCE_DIR}/Scripts/update-windows.ps1"
         "${PROJECT_SOURCE_DIR}/Scripts/WindowsInstall.psm1" "${PROJECT_SOURCE_DIR}/Scripts/WindowsNpu.psm1" DESTINATION .)
-install(FILES "${PROJECT_SOURCE_DIR}/Scripts/WindowsDeviceRecovery.psm1" "${PROJECT_SOURCE_DIR}/Scripts/repair-windows-device.ps1" "${PROJECT_SOURCE_DIR}/Scripts/register-windows-device-recovery.ps1" DESTINATION .)
+install(FILES "${PROJECT_SOURCE_DIR}/Scripts/WindowsDeviceRecovery.psm1" "${PROJECT_SOURCE_DIR}/Scripts/repair-windows-device.ps1" "${PROJECT_SOURCE_DIR}/Scripts/register-windows-device-recovery.ps1"
+        "${PROJECT_SOURCE_DIR}/Scripts/repair-windows-microphone.ps1" DESTINATION .)
 install(FILES "${PROJECT_SOURCE_DIR}/Scripts/repair-windows-capture.ps1" DESTINATION .)
 install(FILES "${PROJECT_SOURCE_DIR}/Resources/EQ/L.txt" "${PROJECT_SOURCE_DIR}/Resources/EQ/R.txt" DESTINATION EQ)
 add_test(NAME PersonalToolsDeviceRecoveryTests COMMAND powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${PROJECT_SOURCE_DIR}/Tests/WindowsDeviceRecoveryTests.ps1")
