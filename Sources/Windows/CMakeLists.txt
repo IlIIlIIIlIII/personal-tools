@@ -7,7 +7,8 @@ add_library(PersonalToolsAPO SHARED Apo.cpp Apo.def)
 target_link_libraries(PersonalToolsAPO PRIVATE PersonalToolsWindowsShared)
 set_target_properties(PersonalToolsAPO PROPERTIES PREFIX "")
 
-add_library(PersonalToolsBridge SHARED UiBridge.cpp)
+enable_language(RC)
+add_library(PersonalToolsBridge SHARED UiBridge.cpp PersonalToolsBridge.rc)
 target_link_libraries(PersonalToolsBridge PRIVATE PersonalToolsWindowsShared setupapi)
 set_target_properties(PersonalToolsBridge PROPERTIES PREFIX "")
 # NPU inference host: OpenVINO loads here, never inside audiodg.
