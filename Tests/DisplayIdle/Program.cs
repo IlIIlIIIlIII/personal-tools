@@ -118,6 +118,33 @@ Test("panel that ignored the off command gets it once more", () =>
     c.Tick(Minute + 2_000); Check(d.Power[upper.Id] == 4 && d.Writes.Count(w => w == upper.Id + ":5") == 2, "no second off");
     c.Tick(Minute + 4_000); Check(d.Writes.Count(w => w == upper.Id + ":5") == 2, "verified twice");
 });
+Test("panel that turns itself back on while dark is turned off again", () =>
+{
+    // 2026-10-27: both MO32U24s lit again an hour after the off command, the HDMI one re-plugging itself.
+    var (c, d, i, f) = Make();
+    c.Tick(Minute); c.Tick(Minute + 2_000);
+    d.Power[lower.Id] = 1; d.Power[upper.Id] = null;
+    c.Tick(61 * Minute);
+    Check(c.Dark && d.Power[lower.Id] == 4 && d.Writes.Count(w => w == lower.Id + ":5") == 2, "not turned off again");
+    Check(d.Writes.Count(w => w == upper.Id + ":5") == 1, "silent panel written");
+    Check(File.ReadAllText(f.LogPath).Contains("MO32U24 · 2 다시 켜져 다시 끔: 성공"), "not logged");
+    Check(c.Snapshot is { Dark: true, DarkCount: 2 } && c.Snapshot.Recent[0].Text == "다시 켜짐 → MO32U24 · 2 끔", "event: " + c.Snapshot.Recent[0].Text);
+    d.Power[upper.Id] = 4;
+    i.Last = 62 * Minute; c.Tick(62 * Minute + 1);
+    Check(!c.Dark && d.Power[lower.Id] == 1 && d.Power[upper.Id] == 1, "input did not wake both");
+});
+Test("panel that keeps coming back is checked less often, a quiet check resets that", () =>
+{
+    var (c, d, _, _) = Make();
+    c.Tick(Minute); c.Tick(Minute + 2_000);
+    int Offs() => d.Writes.Count(w => w == lower.Id + ":5");
+    d.Power[lower.Id] = 1; c.Tick(Minute + 11_999); Check(Offs() == 1, "checked before 10 s");
+    c.Tick(Minute + 12_000); Check(Offs() == 2, "10 s check");
+    d.Power[lower.Id] = 1; c.Tick(Minute + 31_999); Check(Offs() == 2, "not backed off");
+    c.Tick(Minute + 32_000); Check(Offs() == 3, "20 s check");
+    c.Tick(Minute + 72_000); c.Tick(Minute + 82_000); Check(Offs() == 3, "quiet checks");
+    d.Power[lower.Id] = 1; c.Tick(Minute + 92_000); Check(Offs() == 4, "interval not reset");
+});
 Test("settings file: longer timeout, other monitors, but not the on switch", () =>
 {
     var (c, d, i, f) = Make(on: false);

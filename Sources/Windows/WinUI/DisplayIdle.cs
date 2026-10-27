@@ -94,6 +94,9 @@ internal sealed class DisplayIdleFiles(string? folder = null, string onKey = @"S
 internal sealed class DisplayIdleController : IDisposable
 {
     private const int OnTick = 250, DarkTick = 100, SettingsCheck = 5000, VerifyDelay = 2000, RecentLimit = 3;
+    // While dark the panels are read again this often; a panel that keeps coming back on is read
+    // less and less often, up to WatchLimit.
+    private const int WatchInterval = 10_000, WatchLimit = 600_000;
     // After 지금 끄기 the hand is still on the mouse; input this soon after does not wake the panels.
     private const int ManualGrace = 1500;
     private readonly IDisplayPowerControl displays;
@@ -110,7 +113,9 @@ internal sealed class DisplayIdleController : IDisposable
     private DisplayIdleSettings settings = new();
     private DateTime settingsStamp = DateTime.MinValue;
     private long? settingsCheckedAt;
-    private long darkAt, verifyAt, lastInput;
+    private long darkAt, checkAt, lastInput;
+    private int watchInterval = WatchInterval;
+    private bool verified;
     private DateTime? darkSince;
     private string? error;
     private List<DisplayTarget> dark = [];
@@ -198,7 +203,7 @@ internal sealed class DisplayIdleController : IDisposable
         {
             if (last > darkAt) Wake("입력");
             else if (!settings.Enabled) Wake("기능 꺼짐");
-            else if (verifyAt != 0 && now >= verifyAt) { verifyAt = 0; Verify(); }
+            else if (dark.Count > 0 && now >= checkAt) Watch(now);
             return;
         }
         if (settings.Enabled && now - last >= settings.IdleMilliseconds) Darken(now, manual: false);
@@ -252,7 +257,8 @@ internal sealed class DisplayIdleController : IDisposable
     private void Darken(long now, bool manual)
     {
         // Set before the commands go out, so input that arrives while they run still wakes the panels.
-        Dark = true; darkAt = manual ? now + ManualGrace : now; verifyAt = darkAt + VerifyDelay; darkSince = DateTime.Now;
+        Dark = true; darkAt = manual ? now + ManualGrace : now; darkSince = DateTime.Now;
+        checkAt = darkAt + VerifyDelay; verified = false; watchInterval = WatchInterval;
         var clock = Stopwatch.StartNew();
         var turnedOff = new ConcurrentBag<DisplayTarget>();
         var skipped = new ConcurrentBag<string>();
@@ -276,18 +282,34 @@ internal sealed class DisplayIdleController : IDisposable
         Publish();
     }
 
-    // Some panels ignore a command while their menu is open; one more try.
-    private void Verify()
+    // The first check, two seconds after the off command, catches a panel that ignored it (some do
+    // while their menu is open). The later ones catch a panel that turned itself back on: both
+    // MO32U24s did about an hour after D6=5 (2026-10-25..27, the HDMI one re-plugging itself in
+    // Windows) and stayed lit until the next input while the page still said 꺼짐.
+    private void Watch(long now)
     {
-        foreach (var target in dark)
-            if (ReadPower(target.Id) == 1)
-                files.Log($"{target.Name} 꺼지지 않아 다시 끔: {(displays.Set(target.Id, false) ? "성공" : "실패")}");
+        var lit = new ConcurrentBag<(DisplayTarget Target, bool Off)>();
+        Parallel.ForEach(dark, target => { if (ReadPower(target.Id) == 1) lit.Add((target, displays.Set(target.Id, false))); });
+        var found = lit.OrderBy(l => l.Target.Name).ToList();
+        foreach (var (target, off) in found) files.Log($"{target.Name} {(verified ? "다시 켜져" : "꺼지지 않아")} 다시 끔: {(off ? "성공" : "실패")}");
+        if (verified && found.Count > 0)
+        {
+            var parts = new List<string>();
+            if (found.Any(l => l.Off)) parts.Add(string.Join(", ", found.Where(l => l.Off).Select(l => l.Target.Name)) + " 끔");
+            parts.AddRange(found.Where(l => !l.Off).Select(l => l.Target.Name + " 끄기 실패"));
+            AddEvent($"다시 켜짐 → {string.Join(" · ", parts)}");
+            Publish();
+        }
+        verified = true;
+        // Something that keeps switching a panel back on (a person at its power button) is not fought every 10 s.
+        watchInterval = found.Count == 0 ? WatchInterval : Math.Min(watchInterval * 2, WatchLimit);
+        checkAt = now + watchInterval;
     }
 
     private void Wake(string reason, bool quick = false)
     {
         if (!Dark) return;
-        Dark = false; verifyAt = 0; darkSince = null;
+        Dark = false; darkSince = null;
         var targets = dark;
         dark = [];
         if (targets.Count == 0) { TryClearDark(); Publish(); return; }

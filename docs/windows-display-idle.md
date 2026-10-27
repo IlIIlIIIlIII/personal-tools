@@ -10,6 +10,8 @@ Windows에 "화면 켜 둠"을 요청해도 입력이 없으면 끕니다(2026-1
   `IdleInput.cs`(`GetLastInputInfo` + XInput 폴링). 켜진 동안 250 ms, 꺼진 동안 100 ms 간격으로 확인합니다.
 - 끄기 직전 `D6`을 읽어 켜져 있는(1) 모니터만 끄고, 그 모니터만 다시 켭니다. 버튼으로 직접 끈 모니터는 켜지지 않습니다.
 - 켤 때는 `D6=1`을 보낸 뒤 1이 읽힐 때까지 최대 3초씩 기다리며 두 번 더 보냅니다. 끈 뒤 2초에 다시 읽어 켜져 있으면 한 번 더 끕니다.
+- 꺼진 동안에도 10초마다 `D6`을 읽어, 입력 없이 다시 켜진 모니터는 다시 끄고 로그(`다시 켜져 다시 끔`)와 최근 동작(`다시 켜짐 → … 끔`)에 남깁니다.
+  같은 모니터가 연달아 다시 켜지면 확인 간격을 20초, 40초 … 최대 10분까지 늘리고, 꺼진 채 확인되면 10초로 돌아갑니다.
 - 앱 종료, Windows 종료·로그아웃(숨은 최상위 창의 `WM_ENDSESSION`) 때 끈 모니터를 켭니다.
   강제 종료로 꺼진 채 남으면 `dark.json`에 남은 목록을 다음 실행 때 켭니다.
 - 파일: `%LOCALAPPDATA%\PersonalTools\DisplayIdle\` — `settings.json`(없으면 기본값, 5초마다 변경 확인),
@@ -47,6 +49,9 @@ DDC/CI 응답 여부는 페이지를 열 때와 끌 때만 확인하며, 고른 
 - `D6=5`: 패널이 꺼지고 읽으면 4가 나오며 DDC/CI 응답은 계속됩니다. `D6=4`도 꺼지지만 읽으면 1이 나와 확인이 안 되므로 5를 씁니다.
 - 꺼진 동안과 켠 뒤 `EnumDisplayMonitors`·`QueryDisplayConfig` 결과와 모니터 좌표가 같았고, 사용자 확인으로도 창 이동·깜빡임·OSD 안내가 없었습니다.
 - 켜는 데 1.5–1.8초(두 대 동시). 켜지는 동안 `D6` 읽기가 가끔 실패해 확인을 반복합니다.
+- 2026-10-25·26·27(27일은 두 번): 끈 지 약 1시간(60분 28–56초) 뒤 MO32U24가 입력 없이 스스로 켜졌습니다. HDMI 쪽은 이때 Windows에서
+  빠졌다 다시 붙고(`Kernel-PnP/Device Management` 1010, 10-27 05:02:20·09:35:50), 다음 입력 때 두 대 모두 이미 켜져 있었습니다(켜는 데 0.3초).
+  40분 이하로 꺼져 있던 때는 그대로 꺼져 있었습니다. 그전에는 끈 뒤 2초에 한 번만 확인해, 앱은 몇 시간 동안 `2대 꺼짐`으로 표시했습니다.
 - 다른 프로세스의 `PowerSetRequest(DisplayRequired)`와 `SetThreadExecutionState(ES_DISPLAY_REQUIRED)`는
   `CallNtPowerInformation(SystemExecutionState)`로 관리자 권한 없이 보이지만, 사용자 결정에 따라 쓰지 않습니다.
 - XInput 빈 슬롯 확인은 호출당 약 16 µs입니다.
@@ -54,7 +59,7 @@ DDC/CI 응답 여부는 페이지를 열 때와 끌 때만 확인하며, 고른 
 ## 검증
 
 ```powershell
-dotnet run --project Tests\DisplayIdle\DisplayIdleTests.csproj -c Release            # 가짜 모니터로 상태 전환 등 23개
+dotnet run --project Tests\DisplayIdle\DisplayIdleTests.csproj -c Release            # 가짜 모니터로 상태 전환 등 25개
 dotnet run --project Tests\DisplayIdle\DisplayIdleTests.csproj -c Release -- --probe  # 대상 모니터 D6 읽기만
 dotnet run --project Tests\DisplayIdle\DisplayIdleTests.csproj -c Release -- --live 5 # 실제로 5초 끄고 켬, 사용자에게 먼저 알림
 ```
