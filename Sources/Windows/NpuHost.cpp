@@ -46,10 +46,10 @@ void saveDelay(int us){
 // Application log event 7001 from "PersonalTools" starts the SYSTEM task "PersonalTools Microphone
 // Recovery" (registered by register-windows-device-recovery.ps1). The task checks the stall
 // itself before restarting the device, so this event only asks for a look.
-void reportStall(double ratio){
+void reportStall(const std::string& reason){
     HANDLE source=RegisterEventSourceW(nullptr,L"PersonalTools");
     if(!source){writeLog("microphone stall event not written: "+std::to_string(GetLastError()));return;}
-    const std::wstring text=L"Microphone input stalled: packet timestamps span "+std::to_wstring(ratio)+L"x the time its samples cover. Asking for a device restart.";
+    const std::wstring text=L"Microphone input stalled: "+std::wstring(reason.begin(),reason.end())+L". Asking for a device restart.";
     const wchar_t* strings[]={text.c_str()};
     const BOOL ok=ReportEventW(source,EVENTLOG_WARNING_TYPE,0,7001,nullptr,1,0,strings,nullptr);
     DeregisterEventSource(source);

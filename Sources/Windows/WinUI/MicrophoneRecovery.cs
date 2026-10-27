@@ -13,8 +13,12 @@ internal static class MicrophoneRecovery
     public static MicrophoneRecoveryNotice? Describe(string status)
     {
         status = status.Trim();
+        // The script first reconnects the USB port (only the microphone drops) and restarts
+        // Windows Audio only when that fails.
+        if (status.StartsWith("Recovering microphone", StringComparison.Ordinal) && status.Contains("restarting Windows Audio", StringComparison.Ordinal))
+            return new("마이크 복구 중", "USB 포트를 다시 연결하지 못해 Windows 오디오와 마이크 장치를 다시 시작합니다. 20초쯤 모든 소리가 끊깁니다.", false, []);
         if (status.StartsWith("Recovering microphone", StringComparison.Ordinal))
-            return new("마이크 복구 중", "마이크 입력이 멈춰 USB 장치를 다시 시작합니다. 20초쯤 소리가 끊깁니다.", false, []);
+            return new("마이크 복구 중", "마이크 입력이 멈춰 마이크의 USB 연결을 다시 시작합니다. 10초쯤 마이크만 끊기고 다른 소리는 그대로 나옵니다.", false, []);
         if (status.StartsWith("Recovered microphone", StringComparison.Ordinal))
             return new("마이크 복구됨", "마이크 입력이 다시 들어옵니다. 통화 앱에서 마이크가 안 들리면 입력 장치를 다시 선택해 주세요.", false, Closed(status));
         if (status.StartsWith("Microphone recovery failed", StringComparison.Ordinal))

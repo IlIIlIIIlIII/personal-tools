@@ -92,6 +92,53 @@ int main(){
             f.index+=48000*5;f.run(1000,[](int){return std::uint64_t{100000};});
             if(f.t.stalled()||f.reported!=1){puts("A restarted microphone stayed stalled");return 1;}
         }
+        // With samples: 256-frame packets as the APO sends them; `step` advances the timestamp per packet.
+        struct Live{MicTiming t;std::uint64_t index=0,time=1000000000;int reported=0,phase=0;std::mt19937 random{9};std::array<float,256> older{},newer{};
+            enum Kind{noise,frozen,zeros,code};
+            // Noise: a quiet room through the preamp. Frozen: the last 512 frames of it, over and over.
+            // Code: a muted input that sends -1 LSB (24 bit) instead of zeros.
+            void run(int packets,Kind kind,std::uint64_t step=53333){
+                std::normal_distribution<float> gauss(0.f,0.003f);
+                for(int n=0;n<packets;++n){
+                    std::array<float,256> s{};
+                    if(kind==noise){for(auto& x:s)x=gauss(random);older=newer;newer=s;phase=0;}
+                    else if(kind==frozen)s=phase++%2?newer:older;
+                    else if(kind==code)s.fill(-1.f/8388608.f);
+                    if(t.add(index,time,256,s.data()))++reported;index+=256;time+=step;
+                }
+            }};
+        {
+            // 10 minutes of real input with ±2 ms jitter, then 10 minutes muted (exact zeros at the right
+            // rate), then a muted input that sends a constant code.
+            Live f;std::mt19937 random(5);std::uniform_int_distribution<int> jitter(-20000,20000);
+            for(int n=0;n<112500;++n){f.run(1,Live::noise,53333+jitter(random));}
+            f.run(112500,Live::zeros);f.run(1000,Live::noise);f.run(2000,Live::code);
+            if(f.reported||f.t.stalled()){puts("A healthy or muted microphone was taken for a stalled one");return 1;}
+        }
+        for(const std::uint64_t step:{53333ull,80000ull}) {
+            // 2026-10-24 MOTU: the last 512 frames repeated bit for bit (timestamps in step or running 1.5x).
+            Live f;f.run(1000,Live::noise);int at=-1;
+            for(int n=0;n<2000&&at<0;++n){f.run(1,Live::frozen,step);if(f.reported)at=n;}
+            if(at<0||at*256>60000||f.t.reason()!=MicTiming::Reason::frozen||f.t.describe().find("512")==std::string::npos){
+                printf("step %llu reported after %d packets: %s\n",static_cast<unsigned long long>(step),at,f.t.describe().c_str());puts("A frozen microphone was not reported within about 1 s");return 1;}
+            // Real input again on the same stream: no longer stalled, and a second freeze is reported again.
+            f.run(400,Live::noise);
+            if(f.t.stalled()){puts("A microphone whose input came back stayed stalled");return 1;}
+            f.run(400,Live::frozen);
+            if(f.reported!=2){puts("A second freeze was not reported");return 1;}
+        }
+        {
+            // Zeros at half rate (10-24: 24k frames/s): timestamps twice the samples' time, found by the
+            // timestamp windows (two 3 s windows, plus the one it started in).
+            Live f;f.run(1000,Live::noise);int at=-1;
+            for(int n=0;n<2000&&at<0;++n){f.run(1,Live::zeros,106667);if(f.reported)at=n;}
+            if(at<0||at*106667ull>3*30000000ull||f.t.reason()!=MicTiming::Reason::timing){printf("reported after %d packets\n",at);puts("A microphone delivering zeros at half rate was not reported within 9 s");return 1;}
+        }
+        {
+            // A single 0.5 s system stall (samples lost) just after muting is not a stall.
+            Live f;f.run(1000,Live::noise);f.run(20,Live::zeros);f.run(1,Live::zeros,5053333);f.run(2000,Live::zeros);
+            if(f.reported){printf("ratio %.3f\n",f.t.lastRatio());puts("One lost half second while muted was taken for a stalled microphone");return 1;}
+        }
         puts("Microphone timestamp stall detection passed");
     }
     {

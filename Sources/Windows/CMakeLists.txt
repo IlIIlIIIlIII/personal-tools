@@ -16,8 +16,8 @@ add_executable(PersonalToolsNpuHost WIN32 NpuHost.cpp)
 target_link_libraries(PersonalToolsNpuHost PRIVATE PersonalToolsWindowsShared)
 add_executable(PersonalToolsSetup WIN32 Setup.cpp)
 target_compile_definitions(PersonalToolsSetup PRIVATE UNICODE _UNICODE NOMINMAX WIN32_LEAN_AND_MEAN)
-# PersonalToolsWindowsShared for the NeuralIpc/MicTiming headers of --check-microphone.
-target_link_libraries(PersonalToolsSetup PRIVATE PersonalToolsWindowsShared ole32 shell32)
+# PersonalToolsWindowsShared for the NeuralIpc/MicTiming headers of --check-microphone; cfgmgr32 for --cycle-port.
+target_link_libraries(PersonalToolsSetup PRIVATE PersonalToolsWindowsShared ole32 shell32 cfgmgr32)
 if(MINGW)
     target_link_options(PersonalToolsNpuHost PRIVATE -municode -static)
     target_link_options(PersonalToolsSetup PRIVATE -municode -static)

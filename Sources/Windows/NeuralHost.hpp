@@ -81,11 +81,11 @@ public:
     static constexpr std::chrono::milliseconds maxRetryDelay{30000};
     using Log=std::function<void(const std::string&)>;
     using DelayChanged=std::function<void(int microseconds)>;
-    using Stalled=std::function<void(double ratio)>;
+    using Stalled=std::function<void(const std::string& reason)>;
     // initialDelayUs: echo delay measured earlier for the current output device (-1 = unknown);
     // delayChanged is told when a channel adopts a different one, to keep it for next time.
-    // stalled is told (at most once a minute) when a microphone stream's timestamps stop matching
-    // its samples (MicTiming.hpp), so the device can be restarted.
+    // stalled is told when a microphone stream stops delivering real input (MicTiming.hpp), and
+    // again every minute while it stays that way, so the device can be restarted.
     NeuralHost(std::filesystem::path folder,std::wstring section=neural::Mapping::defaultName(),
                std::chrono::milliseconds retryDelay=std::chrono::milliseconds(1000),Log log={},
                int initialDelayUs=-1,DelayChanged delayChanged={},Stalled stalled={})
@@ -226,10 +226,10 @@ private:
             else s.stampTime=static_cast<std::uint64_t>(expectedTime+deviation/16);
         }else{s.stampTime=p.time;s.stamped=true;}
         s.stampIndex=p.index;
-        if(s.timing.add(p.index,p.time,p.frames)){
-            report("microphone stalled: timestamps span "+std::to_string(s.timing.lastRatio())+"x its samples");
+        if(s.timing.add(p.index,p.time,p.frames,p.samples.data()))report("microphone stalled: "+s.timing.describe());
+        if(s.timing.stalled()){
             std::uint64_t last=lastStall_.load();const std::uint64_t now=GetTickCount64();
-            if(stalled_&&(last==0||now-last>=60000)&&lastStall_.compare_exchange_strong(last,now))try{stalled_(s.timing.lastRatio());}catch(...){}
+            if(stalled_&&(last==0||now-last>=60000)&&lastStall_.compare_exchange_strong(last,now))try{stalled_(s.timing.describe());}catch(...){}
         }
         s.unreferenced=s.unreferenced||!available;
         for(unsigned i=0;i<p.frames;++i){
