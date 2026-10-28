@@ -227,6 +227,14 @@ Test("page: 지금 끄기 ignores the hand still on the mouse", () =>
     i.Last = 11_600; c.Tick(11_700); Check(!c.Dark && d.Power[upper.Id] == 1, "did not wake after the grace");
     Check(c.Snapshot.Recent[1].Text == "지금 끄기 → 2대 끔", "event: " + c.Snapshot.Recent[1].Text);
 });
+Test("page: turning the feature on or off redraws the page", () =>
+{
+    var (c, _, _, _) = Make(on: false);
+    c.Tick(0); string off = c.Snapshot.RenderKey;
+    c.SetEnabled(true); c.Tick(1);
+    Check(c.Snapshot.Settings.Enabled && c.Snapshot.RenderKey != off, "on looks the same as off to the page");
+    c.SetEnabled(false); c.Tick(2); Check(c.Snapshot.RenderKey == off, "off again differs");
+});
 Test("page: 지금 끄기 does nothing while the feature is off", () =>
 {
     var (c, d, _, _) = Make(on: false);

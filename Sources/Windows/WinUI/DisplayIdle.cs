@@ -23,7 +23,14 @@ public sealed record DisplayIdleSettings(int IdleSeconds = 60, string[]? Monitor
 public sealed record DisplayIdleMonitor(string Id, string Name, string Detail, bool Supported, bool Selected, bool? Responding, bool Dark);
 public sealed record DisplayIdleEvent(DateTime At, string Text, string? Note = null);
 public sealed record DisplayIdleSnapshot(DisplayIdleSettings Settings, DisplayIdleMonitor[] Monitors, DisplayIdleEvent[] Recent,
-    bool Dark = false, DateTime? DarkSince = null, int DarkCount = 0, string? Error = null);
+    bool Dark = false, DateTime? DarkSince = null, int DarkCount = 0, string? Error = null)
+{
+    // The page redraws only when this changes. The JSON leaves Settings.Enabled out (it is not part of
+    // settings.json), so it is added here: without it the page kept the old on/off state after the switch
+    // changed, and a redraw that landed between a click and the controller could even flip the switch
+    // back while the feature stayed on (2026-10-28).
+    internal string RenderKey => JsonSerializer.Serialize(this) + (Settings.Enabled ? " on" : " off");
+}
 
 // settings.json, dark.json (monitors this app turned off, so a restart can turn them back on) and
 // log.txt under %LOCALAPPDATA%\PersonalTools\DisplayIdle. The on switch is a volatile key under HKCU

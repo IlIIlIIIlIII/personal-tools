@@ -2,7 +2,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
-using System.Text.Json;
 
 namespace PersonalTools;
 
@@ -35,9 +34,9 @@ public sealed partial class DisplayIdlePage : UserControl
 
     private void Render(DisplayIdleSnapshot value)
     {
-        string serialized = JsonSerializer.Serialize(value);
-        if (rendered == serialized) return;
-        rendered = serialized;
+        string key = value.RenderKey;
+        if (rendered == key) return;
+        rendered = key;
         snapshot = value;
         bool ready = value.Monitors.Length > 0;
         var settings = value.Settings;
