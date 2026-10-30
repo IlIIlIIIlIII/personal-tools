@@ -1,8 +1,5 @@
 using Microsoft.Win32;
 using System.Collections.Concurrent;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -10,18 +7,15 @@ namespace PersonalTools;
 
 // One zone as the page shows it: the effect that covers it in the current profile.
 public sealed record LightingZoneState(LightingZone Zone, LightingEffectKind? Kind, LightingColor? Color, bool Random, int Speed, int KeyCount);
-// Installed: the SYSTEM helper is in Program Files. On is null until it has reported once (or when
-// its last run failed). Requested is the state asked for while a request is pending.
-public sealed record PowerLedState(bool Installed, bool? On, bool Pending, string? Error, bool? Requested = null);
 // Revision counts the page commands done, so the page redraws after every one, even one that left
 // the firmware as it was (a stale toggle would otherwise stay on screen, as on 2026-10-28).
 public sealed record LightingSnapshot(bool Ready, bool Found, bool WindowsControls, int Brightness, int Profile, bool LogoOn,
-    LightingZoneState[] Zones, PowerLedState PowerLed, string? Error = null, int Revision = 0)
+    LightingZoneState[] Zones, string? Error = null, int Revision = 0)
 {
     // The key matrix only changes the preview, which the page redraws on its own.
     [JsonIgnore] public SpectrumLayout? Layout { get; init; }
     internal string RenderKey => JsonSerializer.Serialize(this) + (Layout is null ? "" : " layout");
-    public static readonly LightingSnapshot Empty = new(false, false, false, 0, 0, false, [], new(false, null, false, null));
+    public static readonly LightingSnapshot Empty = new(false, false, false, 0, 0, false, []);
 }
 
 internal static class LightingZones
@@ -120,89 +114,6 @@ internal sealed class WindowsDynamicLighting(string root = @"Software\Microsoft\
     }
 }
 
-// The power button LED is reachable only through Lenovo's WMI (LENOVO_OTHER_METHOD feature
-// 0x06040000), which needs administrator rights. set-windows-power-led.ps1 runs as SYSTEM from
-// Program Files when this app writes Application event 7101 (off), 7102 (on) or 7103 (read) from the
-// PersonalTools source, and leaves one line in power-led-status.txt (admin-only).
-internal sealed record PowerLedReading(bool Installed, int? Value, DateTime Stamp, string? Error);
-internal interface IPowerLed
-{
-    PowerLedReading Read();
-    void Request(bool? on);
-    Task SetupAsync();
-}
-
-internal sealed class PowerLedHelper(string? folder = null) : IPowerLed
-{
-    internal const int OffEvent = 7101, OnEvent = 7102, ReadEvent = 7103;
-    private readonly string folder = folder ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "PersonalTools");
-    private string StatusPath => Path.Combine(folder, "power-led-status.txt");
-    private string ScriptPath => Path.Combine(folder, "set-windows-power-led.ps1");
-    private string RegisterPath => Path.Combine(folder, "register-windows-power-led.ps1");
-
-    public PowerLedReading Read()
-    {
-        if (!File.Exists(ScriptPath) || !File.Exists(StatusPath)) return new(false, null, DateTime.MinValue, null);
-        try
-        {
-            var stamp = File.GetLastWriteTimeUtc(StatusPath);
-            // Shared for write and delete, so this read never makes the helper's Move-Item fail.
-            using var stream = new FileStream(StatusPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-            using var reader = new StreamReader(stream);
-            var (value, error) = Parse(reader.ReadToEnd());
-            return new(true, value, stamp, error);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return new(true, null, DateTime.MinValue, null); }
-    }
-    // "value=1 state=On at=..." or "error=... at=..."
-    internal static (int? Value, string? Error) Parse(string line)
-    {
-        line = line.Trim();
-        if (line.StartsWith("error=", StringComparison.Ordinal))
-        {
-            int at = line.LastIndexOf(" at=", StringComparison.Ordinal);
-            return (null, at > 6 ? line[6..at] : line[6..]);
-        }
-        foreach (var part in line.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-            if (part.StartsWith("value=", StringComparison.Ordinal) && int.TryParse(part[6..], out int value)) return (value, null);
-        return (null, "알 수 없는 응답: " + line);
-    }
-    public void Request(bool? on)
-    {
-        int id = on switch { true => OnEvent, false => OffEvent, null => ReadEvent };
-        var source = RegisterEventSource(null, "PersonalTools");
-        if (source == 0) throw new Win32Exception(Marshal.GetLastWin32Error(), "이벤트 로그에 쓰지 못했습니다.");
-        try
-        {
-            string[] strings = [on switch { true => "Power button LED on requested by Personal Tools.", false => "Power button LED off requested by Personal Tools.", null => "Power button LED state requested by Personal Tools." }];
-            if (!ReportEvent(source, 4 /* information */, 0, (uint)id, 0, 1, 0, strings, 0))
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "이벤트 로그에 쓰지 못했습니다.");
-        }
-        finally { DeregisterEventSource(source); }
-    }
-    public async Task SetupAsync()
-    {
-        if (!File.Exists(RegisterPath)) throw new FileNotFoundException("전원 버튼 도우미 설치 파일이 없습니다. 앱을 다시 설치해 주세요.", RegisterPath);
-        Process process;
-        try
-        {
-            process = Process.Start(new ProcessStartInfo("powershell.exe", $"-NoProfile -ExecutionPolicy Bypass -File \"{RegisterPath}\"")
-            { UseShellExecute = true, Verb = "runas", WindowStyle = ProcessWindowStyle.Hidden })!;
-        }
-        catch (Win32Exception error) when (error.NativeErrorCode == 1223)
-        { throw new InvalidOperationException("관리자 승인이 취소되어 아무것도 바꾸지 않았습니다. 다시 시도하고 사용자 계정 컨트롤 창에서 '예'를 눌러 주세요."); }
-        using var _ = process;
-        await process.WaitForExitAsync();
-        if (process.ExitCode != 0) throw new InvalidOperationException($"전원 버튼 도우미를 설치하지 못했습니다 (코드 {process.ExitCode}).");
-    }
-
-    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "RegisterEventSourceW")]
-    private static extern nint RegisterEventSource(string? server, string source);
-    [DllImport("advapi32.dll", SetLastError = true)] private static extern bool DeregisterEventSource(nint source);
-    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "ReportEventW")]
-    private static extern bool ReportEvent(nint source, ushort type, ushort category, uint id, nint user, ushort count, uint dataSize, string[] strings, nint data);
-}
-
 // log.txt under %LOCALAPPDATA%\PersonalTools\Lighting: every write and failure, in Korean.
 internal sealed class LightingFiles(string? folder = null)
 {
@@ -234,10 +145,9 @@ internal sealed class LightingFiles(string? folder = null)
 // four times a second for the preview.
 internal sealed class LightingController : IDisposable
 {
-    private const int FrameTick = 250, PollTick = 1000, OpenRetry = 5000, PowerTimeout = 30_000;
+    private const int FrameTick = 250, PollTick = 1000, OpenRetry = 5000;
     private readonly Func<SpectrumClient?> open;
     private readonly IDynamicLighting windows;
-    private readonly IPowerLed power;
     private readonly LightingFiles files;
     private readonly Func<long> clock;
     private readonly ManualResetEvent stop = new(false);
@@ -256,12 +166,6 @@ internal sealed class LightingController : IDisposable
     private string? error;
     private long nextPoll, nextFrame, nextOpen;
     private int pendingBrightness = -1;
-    // One power LED request at a time: when it was sent, the status file's stamp before it, what it
-    // asked for, and the latest switch position asked for while it was running.
-    private long powerSentAt = -1;
-    private DateTime powerStampBefore;
-    private bool? powerRequested, powerWanted;
-    private string? powerError, powerLogged;
     private LightingSnapshot snapshot = LightingSnapshot.Empty;
     private string? published;
 
@@ -270,12 +174,11 @@ internal sealed class LightingController : IDisposable
     public event Action<LightingSnapshot>? Changed;
     public event Action<IReadOnlyDictionary<ushort, LightingColor>>? Colors;
 
-    internal LightingController(Func<SpectrumClient?>? open = null, IDynamicLighting? windows = null, IPowerLed? power = null,
+    internal LightingController(Func<SpectrumClient?>? open = null, IDynamicLighting? windows = null,
         LightingFiles? files = null, Func<long>? clock = null)
     {
         this.open = open ?? (() => HidSpectrumTransport.Open() is { } transport ? new SpectrumClient(transport) : null);
         this.windows = windows ?? new WindowsDynamicLighting();
-        this.power = power ?? new PowerLedHelper();
         this.files = files ?? new LightingFiles();
         this.clock = clock ?? (() => Environment.TickCount64);
     }
@@ -304,8 +207,6 @@ internal sealed class LightingController : IDisposable
             nextPoll = 0;
             nextFrame = 0;
             effectsStale = true;
-            // A helper run that failed leaves no value; opening the page asks it again.
-            if (powerSentAt < 0 && power.Read() is { Installed: true, Value: null }) SendPower(null);
         });
     }
     public void Hidden() => visible = false;
@@ -376,29 +277,6 @@ internal sealed class LightingController : IDisposable
         files.Log("이 노트북에서 Windows 동적 조명 끔");
         nextFrame = 0;
     });
-    public void SetPowerLed(bool on) => Post(() => SendPower(on));
-    public async Task SetupPowerLedAsync()
-    {
-        await power.SetupAsync();
-        files.Log("전원 버튼 도우미 설치");
-        Post(() => SendPower(null));
-    }
-
-    private void SendPower(bool? on)
-    {
-        if (powerSentAt >= 0)
-        {
-            // Two helper runs at once could finish in either order; the last switch position waits.
-            if (on is not null) powerWanted = on;
-            return;
-        }
-        powerStampBefore = power.Read().Stamp;
-        power.Request(on);
-        powerSentAt = clock();
-        powerRequested = on;
-        powerError = null;
-        if (on is not null) files.Log(on == true ? "전원 버튼 켬 요청" : "전원 버튼 끔 요청");
-    }
 
     private void Post(Action command) { commands.Enqueue(command); signal.Set(); }
 
@@ -453,7 +331,6 @@ internal sealed class LightingController : IDisposable
     private void Poll()
     {
         windowsControls = windows.Controls() == true;
-        PollPower();
         if (Client() is not { } device) { ready = true; return; }
         layout ??= device.ReadLayout();
         brightness = device.ReadBrightness();
@@ -462,33 +339,6 @@ internal sealed class LightingController : IDisposable
         if (effectsProfile != profile || effectsStale) LoadEffects(device);
         ready = true;
         error = null;
-    }
-    private void PollPower()
-    {
-        var reading = power.Read();
-        if (powerSentAt < 0)
-        {
-            // A helper that answered after the timeout clears the message.
-            if (powerError is not null && reading.Stamp > powerStampBefore) powerError = null;
-            return;
-        }
-        if (reading.Stamp > powerStampBefore)
-        {
-            powerSentAt = -1;
-            powerRequested = null;
-            if (powerWanted is { } wanted)
-            {
-                powerWanted = null;
-                if (reading.Value is null || (reading.Value != 0) != wanted) SendPower(wanted);
-            }
-        }
-        else if (clock() - powerSentAt > PowerTimeout)
-        {
-            powerSentAt = -1;
-            powerRequested = powerWanted = null;
-            powerError = "전원 버튼 도우미가 응답하지 않습니다. 잠시 뒤 다시 시도해 주세요.";
-            files.Log("전원 버튼 도우미 응답 없음");
-        }
     }
     private void LoadEffects(SpectrumClient device)
     {
@@ -526,16 +376,10 @@ internal sealed class LightingController : IDisposable
     {
         try
         {
-            var reading = power.Read();
-            if (reading.Error is not null && reading.Error != powerLogged) files.Log("전원 버튼 도우미 오류: " + reading.Error);
-            powerLogged = reading.Error;
-            string? powerProblem = powerError ?? (reading.Error is null ? null : "전원 버튼 상태를 읽지 못했습니다. 스위치를 다시 눌러 보세요.");
-            var powerState = new PowerLedState(reading.Installed, reading.Value is null ? null : reading.Value != 0, powerSentAt >= 0,
-                powerProblem, powerSentAt >= 0 ? powerWanted ?? powerRequested : null);
             var zones = effectsProfile == profile && profile > 0
                 ? LightingZones.All.Select(z => LightingZones.Describe(effects, z, LightingZones.Keys(layout, effects, z).Length)).ToArray()
                 : [];
-            var value = new LightingSnapshot(ready, found, windowsControls, brightness, profile, logo, zones, powerState, error, revision) { Layout = layout };
+            var value = new LightingSnapshot(ready, found, windowsControls, brightness, profile, logo, zones, error, revision) { Layout = layout };
             string key = value.RenderKey;
             Volatile.Write(ref snapshot, value);
             if (key == published) return;

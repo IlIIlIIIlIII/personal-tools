@@ -18,8 +18,6 @@ if (args.Contains("--probe"))
         Console.WriteLine($"{LightingController.Name(zone)}: {(state.Kind is { } k ? LightingEffects.Name(k) : "없음")} {state.Color?.Hex ?? (state.Random ? "무작위" : "")} speed {state.Speed}");
     }
     Console.WriteLine($"Windows Dynamic Lighting controls the laptop: {new WindowsDynamicLighting().Controls()?.ToString() ?? "unknown"} (this process may see a virtualized HKCU)");
-    var power = new PowerLedHelper().Read();
-    Console.WriteLine($"power LED helper installed {power.Installed}, value {power.Value?.ToString() ?? "-"}, error {power.Error ?? "-"}");
     var colors = device.ReadColors();
     Console.WriteLine(colors is null ? "colors: report busy" : $"colors: {colors.Count} lights, {colors.Values.Distinct().Count()} distinct");
     return;
@@ -75,16 +73,15 @@ void Sleep(int ms) => now += Math.Max(ms, 1);
     setup?.Invoke(firmware);
     return (firmware, new SpectrumClient(firmware, Clock, Sleep));
 }
-(LightingController, FakeFirmware, FakeWindows, FakePower) Controller(Action<FakeFirmware>? setup = null, bool found = true)
+(LightingController, FakeFirmware, FakeWindows) Controller(Action<FakeFirmware>? setup = null, bool found = true)
 {
     var firmware = new FakeFirmware();
     setup?.Invoke(firmware);
     var windows = new FakeWindows();
-    var power = new FakePower();
     var files = new LightingFiles(Path.Combine(Path.GetTempPath(), "PersonalToolsLightingTests", Guid.NewGuid().ToString("N")));
-    var controller = new LightingController(() => found ? new SpectrumClient(firmware, Clock, Sleep) : null, windows, power, files, Clock);
+    var controller = new LightingController(() => found ? new SpectrumClient(firmware, Clock, Sleep) : null, windows, files, Clock);
     controller.Shown();
-    return (controller, firmware, windows, power);
+    return (controller, firmware, windows);
 }
 
 Test("parses the factory profiles read from this laptop", () =>
@@ -224,14 +221,14 @@ Test("live colors come from the state report only", () =>
 
 Test("the controller reads nothing until the page is shown", () =>
 {
-    var (controller, firmware, _, _) = Controller();
+    var (controller, firmware, _) = Controller();
     controller.Hidden();
     controller.Step(poll: false, frame: false);
     Check(firmware.Requests == 0 && !controller.Snapshot.Ready, "no device traffic");
 });
 Test("a poll fills the page", () =>
 {
-    var (controller, _, _, _) = Controller(f => { f.Brightness = 7; f.Profile = 1; });
+    var (controller, _, _) = Controller(f => { f.Brightness = 7; f.Profile = 1; });
     LightingSnapshot? seen = null;
     controller.Changed += s => seen = s;
     controller.Step(poll: true, frame: false);
@@ -242,7 +239,7 @@ Test("a poll fills the page", () =>
 });
 Test("the page redraws only when something changes", () =>
 {
-    var (controller, firmware, _, _) = Controller();
+    var (controller, firmware, _) = Controller();
     controller.Step(poll: true, frame: false);
     int changes = 0;
     controller.Changed += _ => changes++;
@@ -255,7 +252,7 @@ Test("the page redraws only when something changes", () =>
 });
 Test("Fn+Space is picked up on the next poll", () =>
 {
-    var (controller, firmware, _, _) = Controller();
+    var (controller, firmware, _) = Controller();
     controller.Step(poll: true, frame: false);
     firmware.Profile = 4;
     firmware.Brightness = 2;
@@ -265,7 +262,7 @@ Test("Fn+Space is picked up on the next poll", () =>
 });
 Test("a zone change rewrites the current profile", () =>
 {
-    var (controller, firmware, _, _) = Controller();
+    var (controller, firmware, _) = Controller();
     controller.Step(poll: true, frame: false);
     controller.SetZone(LightingZone.Keyboard, 1, kind: LightingEffectKind.Static, color: new(255, 0, 0), random: false);
     controller.Step(poll: false, frame: false);
@@ -277,7 +274,7 @@ Test("a zone change rewrites the current profile", () =>
 });
 Test("a slider drag writes only the last brightness", () =>
 {
-    var (controller, firmware, _, _) = Controller();
+    var (controller, firmware, _) = Controller();
     controller.Step(poll: true, frame: false);
     controller.SetBrightness(3);
     controller.SetBrightness(5);
@@ -287,7 +284,7 @@ Test("a slider drag writes only the last brightness", () =>
 });
 Test("profile, logo and reset", () =>
 {
-    var (controller, firmware, _, _) = Controller();
+    var (controller, firmware, _) = Controller();
     controller.Step(poll: true, frame: false);
     controller.SetProfile(3);
     controller.SetLogo(false);
@@ -300,7 +297,7 @@ Test("profile, logo and reset", () =>
 });
 Test("Windows Dynamic Lighting is reported and can be turned off for the laptop", () =>
 {
-    var (controller, _, windows, _) = Controller();
+    var (controller, _, windows) = Controller();
     windows.Value = true;
     controller.Step(poll: true, frame: false);
     Check(controller.Snapshot.WindowsControls, "controls");
@@ -310,7 +307,7 @@ Test("Windows Dynamic Lighting is reported and can be turned off for the laptop"
 });
 Test("no controller found", () =>
 {
-    var (controller, _, _, _) = Controller(found: false);
+    var (controller, _, _) = Controller(found: false);
     controller.Step(poll: true, frame: false);
     var s = controller.Snapshot;
     Check(s.Ready && !s.Found && s.Zones.Length == 0, "ready, not found");
@@ -322,7 +319,7 @@ Test("a broken connection is reopened", () =>
 {
     int opened = 0;
     var firmware = new FakeFirmware();
-    var controller = new LightingController(() => { opened++; return new SpectrumClient(firmware, Clock, Sleep); }, new FakeWindows(), new FakePower(),
+    var controller = new LightingController(() => { opened++; return new SpectrumClient(firmware, Clock, Sleep); }, new FakeWindows(),
         new LightingFiles(Path.Combine(Path.GetTempPath(), "PersonalToolsLightingTests", Guid.NewGuid().ToString("N"))), Clock);
     controller.Shown();
     controller.Step(poll: true, frame: false);
@@ -333,27 +330,9 @@ Test("a broken connection is reopened", () =>
     controller.Step(poll: true, frame: false);
     Check(controller.Snapshot.Error is null && opened == 2 && controller.Snapshot.Found, "reopened");
 });
-Test("the power LED waits for the SYSTEM helper", () =>
-{
-    var (controller, _, _, power) = Controller();
-    controller.Step(poll: true, frame: false);
-    Check(controller.Snapshot.PowerLed is { Installed: true, On: true, Pending: false }, "on");
-    controller.SetPowerLed(false);
-    controller.Step(poll: false, frame: false);
-    Check(power.Requests.SequenceEqual(new bool?[] { false }) && controller.Snapshot.PowerLed.Pending, "pending");
-    power.Value = 0;
-    power.Stamp = power.Stamp.AddSeconds(2);
-    controller.Step(poll: true, frame: false);
-    Check(controller.Snapshot.PowerLed is { On: false, Pending: false, Error: null }, "off once the helper reported");
-    controller.SetPowerLed(true);
-    controller.Step(poll: false, frame: false);
-    now += 31_000;
-    controller.Step(poll: true, frame: false);
-    Check(controller.Snapshot.PowerLed is { Pending: false, Error: not null }, "timeout");
-});
 Test("two quick clicks on one zone both stay", () =>
 {
-    var (controller, firmware, _, _) = Controller();
+    var (controller, firmware, _) = Controller();
     controller.Step(poll: true, frame: false);
     // Both queued before the page saw the first result: an effect, then a color from the old card.
     controller.SetZone(LightingZone.Keyboard, 1, kind: LightingEffectKind.ColorPulse);
@@ -370,7 +349,7 @@ Test("two quick clicks on one zone both stay", () =>
 });
 Test("a change meant for another profile is dropped", () =>
 {
-    var (controller, firmware, _, _) = Controller();
+    var (controller, firmware, _) = Controller();
     controller.Step(poll: true, frame: false);
     firmware.Profile = 4;
     controller.Step(poll: true, frame: false);
@@ -383,7 +362,7 @@ Test("a change meant for another profile is dropped", () =>
 });
 Test("every command redraws the page, even one that changed nothing", () =>
 {
-    var (controller, _, _, _) = Controller();
+    var (controller, _, _) = Controller();
     controller.Step(poll: true, frame: false);
     int changes = 0;
     controller.Changed += _ => changes++;
@@ -391,54 +370,9 @@ Test("every command redraws the page, even one that changed nothing", () =>
     controller.Step(poll: false, frame: false);
     Check(changes == 1, $"changed {changes} times");
 });
-Test("power LED requests go one at a time, the last switch position wins", () =>
-{
-    var (controller, _, _, power) = Controller();
-    controller.Step(poll: true, frame: false);
-    controller.SetPowerLed(false);
-    controller.SetPowerLed(true);
-    controller.SetPowerLed(false);
-    controller.Step(poll: false, frame: false);
-    Check(power.Requests.SequenceEqual(new bool?[] { false }), "one request in flight");
-    Check(controller.Snapshot.PowerLed is { Pending: true, Requested: false }, "switch shows the last position");
-    power.Value = 0;
-    power.Stamp = power.Stamp.AddSeconds(2);
-    controller.Step(poll: true, frame: false);
-    Check(power.Requests.Count == 1 && !controller.Snapshot.PowerLed.Pending, "already off: nothing more to send");
-    controller.SetPowerLed(true);
-    controller.SetPowerLed(false);
-    controller.SetPowerLed(true);
-    controller.Step(poll: false, frame: false);
-    power.Stamp = power.Stamp.AddSeconds(2);   // the first (on) request failed to change it
-    controller.Step(poll: true, frame: false);
-    Check(power.Requests.SequenceEqual(new bool?[] { false, true, true }), string.Join(",", power.Requests));
-});
-Test("a failed helper run is read again when the page opens", () =>
-{
-    var (controller, _, _, power) = Controller();
-    power.Value = null;
-    power.Error = "Access denied";
-    controller.Step(poll: false, frame: false);
-    Check(power.Requests.SequenceEqual(new bool?[] { null }), "read requested");
-    Check(controller.Snapshot.PowerLed.Error is { } message && !message.Contains("Access"), "Korean message, original only in the log");
-});
-Test("a helper that answers after the timeout clears the message", () =>
-{
-    var (controller, _, _, power) = Controller();
-    controller.Step(poll: true, frame: false);
-    controller.SetPowerLed(false);
-    controller.Step(poll: false, frame: false);
-    now += 31_000;
-    controller.Step(poll: true, frame: false);
-    Check(controller.Snapshot.PowerLed.Error is not null, "timeout");
-    power.Value = 0;
-    power.Stamp = power.Stamp.AddSeconds(40);
-    controller.Step(poll: true, frame: false);
-    Check(controller.Snapshot.PowerLed is { Error: null, On: false }, "late answer");
-});
 Test("a failing command does not stop the controller", () =>
 {
-    var (controller, firmware, windows, _) = Controller();
+    var (controller, firmware, windows) = Controller();
     controller.Step(poll: true, frame: false);
     windows.Throw = true;
     controller.TurnOffWindowsLighting();
@@ -448,19 +382,12 @@ Test("a failing command does not stop the controller", () =>
 });
 Test("queued writes are dropped after Dispose", () =>
 {
-    var (controller, firmware, _, _) = Controller();
+    var (controller, firmware, _) = Controller();
     controller.Step(poll: true, frame: false);
     controller.SetBrightness(2);
     controller.Dispose();
     controller.Step(poll: false, frame: false);
     Check(firmware.BrightnessWrites.Count == 0, "nothing written");
-});
-Test("power LED status lines", () =>
-{
-    Check(PowerLedHelper.Parse("value=1 before=1 state=Read at=2026-10-30T14:00:00+09:00") == (1, null), "value");
-    Check(PowerLedHelper.Parse("value=0 before=1 state=Off at=x\r\n") == (0, null), "off");
-    Check(PowerLedHelper.Parse("error=액세스가 거부되었습니다. at=2026-10-30T14:00:00+09:00") == (null, "액세스가 거부되었습니다."), "error");
-    Check(PowerLedHelper.Parse("garbage").Error is not null, "unknown");
 });
 Test("Windows Dynamic Lighting registry values", () =>
 {
@@ -495,18 +422,6 @@ sealed class FakeWindows : IDynamicLighting
     public int TurnOffs;
     public bool? Controls() => Value;
     public void TurnOff() { if (Throw) throw new InvalidOperationException("test"); TurnOffs++; Value = false; }
-}
-
-sealed class FakePower : IPowerLed
-{
-    public bool Installed = true;
-    public int? Value = 1;
-    public string? Error;
-    public DateTime Stamp = new(2026, 10, 30, 5, 0, 0, DateTimeKind.Utc);
-    public readonly List<bool?> Requests = [];
-    public PowerLedReading Read() => new(Installed, Value, Stamp, Error);
-    public void Request(bool? on) => Requests.Add(on);
-    public Task SetupAsync() => Task.CompletedTask;
 }
 
 // The Legion 9 18IAX10 keyboard controller as measured on 2026-10-30: answers lag one request,

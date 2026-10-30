@@ -18,8 +18,7 @@ $log = Join-Path $destination 'update.log'
 function Write-Log([string]$text) { Add-Content -LiteralPath $log -Encoding utf8 -Value ("{0:s} {1}" -f (Get-Date), $text); Write-Output $text }
 
 $files = @('PersonalToolsAPO.dll','PersonalToolsSetup.exe','install-windows.ps1','uninstall-windows.ps1','update-windows.ps1','WindowsInstall.psm1',
-    'WindowsDeviceRecovery.psm1','repair-windows-device.ps1','repair-windows-capture.ps1','repair-windows-microphone.ps1','register-windows-device-recovery.ps1',
-    'set-windows-power-led.ps1','register-windows-power-led.ps1')
+    'WindowsDeviceRecovery.psm1','repair-windows-device.ps1','repair-windows-capture.ps1','repair-windows-microphone.ps1','register-windows-device-recovery.ps1')
 $folders = @('ui')
 $signed = @('PersonalToolsAPO.dll','PersonalToolsSetup.exe','ui\PersonalToolsBridge.dll','ui\PersonalToolsWindows.exe','ui\PersonalToolsWindows.dll')
 if (Test-Path -LiteralPath (Join-Path $SourceDirectory 'npu\enabled.flag')) {
@@ -61,6 +60,4 @@ finally {
 }
 # Picks up recovery tasks added since the installation (microphone recovery, 2026-10-25).
 & (Join-Path $destination 'register-windows-device-recovery.ps1') | ForEach-Object { Write-Log $_ }
-# The lighting page's power button switch (2026-10-30).
-try { & (Join-Path $destination 'register-windows-power-led.ps1') | ForEach-Object { Write-Log $_ } } catch { Write-Log "Power button LED helper not registered: $_" }
 Write-Output 'Updated. Reopen Personal Tools and any app that was recording or playing.'

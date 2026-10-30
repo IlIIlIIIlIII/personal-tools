@@ -2,7 +2,7 @@
 
 ## 2026-10-30 조명
 
-- 메뉴 **조명**(화면 자동 끄기 아래)에서 이 노트북(Legion 9 18IAX10)의 키보드, 앞쪽 라이트바, 덮개 로고의 효과·색·속도와 밝기, 프로필(Fn+Space)을 바꿉니다. 설정은 노트북 펌웨어에 저장되어 앱을 닫아도 유지됩니다. Windows 동적 조명이 조명을 쓰고 있으면 이 노트북에서만 끄는 버튼을 보여 줍니다. 전원 버튼 표시등은 SYSTEM 도우미 작업으로 켜고 끕니다. 시안: https://claude.ai/artifact/6EANCaKQMaEjWsb5MN7Gz7, 동작과 측정: [windows-lighting.md](windows-lighting.md).
+- 메뉴 **조명**(화면 자동 끄기 아래)에서 이 노트북(Legion 9 18IAX10)의 키보드, 앞쪽 라이트바, 덮개 로고의 효과·색·속도와 밝기, 프로필(Fn+Space)을 바꿉니다. 설정은 노트북 펌웨어에 저장되어 앱을 닫아도 유지됩니다. Windows 동적 조명이 조명을 쓰고 있으면 이 노트북에서만 끄는 버튼을 보여 줍니다. 전원 버튼 불은 성능 모드 표시라 바꾸지 않습니다(첫 배포의 전원 버튼 스위치와 SYSTEM 도우미는 같은 날 뺐습니다). 시안: https://claude.ai/artifact/6EANCaKQMaEjWsb5MN7Gz7, 동작과 측정: [windows-lighting.md](windows-lighting.md).
 
 ## 2026-10-23 화면 자동 끄기
 

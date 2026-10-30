@@ -31,7 +31,7 @@ public sealed partial class LightingPage : UserControl
     private string? rendered, zonesRendered;
     private SpectrumLayout? drawnLayout;
     private ElementTheme drawnTheme;
-    private bool drawn, updating, settingUp;
+    private bool drawn, updating;
     // An open effect list or color flyout: the zone cards are not rebuilt under it.
     private int holding;
     // The brightness the slider sent; the slider is not moved back while that write is on its way.
@@ -95,7 +95,6 @@ public sealed partial class LightingPage : UserControl
         ZonesPending.Visibility = zonesLoaded ? Visibility.Collapsed : Visibility.Visible;
         ZonesPending.Text = value.Ready && !value.Found ? "조명 장치를 찾으면 구역 설정이 여기에 나옵니다." : "노트북 조명을 읽고 있습니다.";
         RenderLegend(value);
-        RenderPower(value.PowerLed);
         updating = false;
         DrawPreview(value.Layout);
     }
@@ -409,26 +408,6 @@ public sealed partial class LightingPage : UserControl
         return brush;
     }
 
-    private void RenderPower(PowerLedState power)
-    {
-        PowerSetup.Visibility = power.Installed ? Visibility.Collapsed : Visibility.Visible;
-        PowerSetup.IsEnabled = !settingUp;
-        PowerSwitch.Visibility = power.Installed ? Visibility.Visible : Visibility.Collapsed;
-        // While a request runs the switch shows what was asked for, not the state before it.
-        PowerSwitch.IsOn = power.Pending && power.Requested is { } asked ? asked : power.On == true;
-        PowerSwitch.IsEnabled = power.Installed && !power.Pending;
-        bool busy = power.Pending || settingUp;
-        PowerBusy.IsActive = busy;
-        PowerBusy.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
-        PowerDescription.Text = "색은 전원 모드를 따릅니다: 흰색 균형, 파랑 저소음, 빨강 성능, 보라 사용자 지정."
-            + (power.Installed ? "" : " 켜고 끄려면 처음 한 번 관리자 권한으로 설정해야 합니다.");
-        if (!settingUp)
-        {
-            PowerError.Text = power.Error ?? "";
-            PowerError.Visibility = power.Error is null ? Visibility.Collapsed : Visibility.Visible;
-        }
-    }
-
     // The deck and lid outlines once per layout and theme; key brushes are recolored by Paint.
     private void DrawPreview(SpectrumLayout? layout)
     {
@@ -561,34 +540,4 @@ public sealed partial class LightingPage : UserControl
         if (await dialog.ShowAsync() == ContentDialogResult.Primary) controller?.ResetProfile(profile);
     }
     private void WindowsOffClick(object sender, RoutedEventArgs e) => controller?.TurnOffWindowsLighting();
-    private void PowerToggled(object sender, RoutedEventArgs e)
-    {
-        if (updating) return;
-        // One request at a time: the switch stays off until the helper has answered.
-        PowerSwitch.IsEnabled = false;
-        controller?.SetPowerLed(PowerSwitch.IsOn);
-    }
-    private async void PowerSetupClick(object sender, RoutedEventArgs e)
-    {
-        if (controller is null) return;
-        settingUp = true;
-        RenderPower(snapshot.PowerLed);
-        try
-        {
-            await controller.SetupPowerLedAsync();
-            PowerError.Visibility = Visibility.Collapsed;
-        }
-        catch (Exception error)
-        {
-            PowerError.Text = error.Message;
-            PowerError.Visibility = Visibility.Visible;
-        }
-        finally
-        {
-            settingUp = false;
-            PowerSetup.IsEnabled = true;
-            PowerBusy.IsActive = snapshot.PowerLed.Pending;
-            PowerBusy.Visibility = snapshot.PowerLed.Pending ? Visibility.Visible : Visibility.Collapsed;
-        }
-    }
 }

@@ -143,34 +143,8 @@
         <StackPanel x:Name="ZoneList" Spacing="4"/>
         <TextBlock x:Name="ZonesPending" Style="{StaticResource Muted}" Text="노트북 조명을 읽고 있습니다."/>
       </StackPanel>
-
-      <StackPanel Spacing="4">
-        <TextBlock Text="다른 표시등" Style="{StaticResource GroupHeader}" Margin="0,8,0,4"/>
-        <Border Style="{StaticResource SettingCard}">
-          <Grid ColumnSpacing="16">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-            <FontIcon Glyph="&#xE7E8;" FontSize="20"/>
-            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="전원 버튼"/>
-              <TextBlock x:Name="PowerDescription" Style="{StaticResource CardDescription}" Text="색은 전원 모드를 따릅니다: 흰색 균형, 파랑 저소음, 빨강 성능, 보라 사용자 지정."/>
-              <TextBlock x:Name="PowerError" Style="{StaticResource CardDescription}" Foreground="{ThemeResource SystemFillColorCriticalBrush}" Visibility="Collapsed"/>
-            </StackPanel>
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-              <ProgressRing x:Name="PowerBusy" Width="16" Height="16" IsActive="False" Visibility="Collapsed"/>
-              <ToggleSwitch x:Name="PowerSwitch" OnContent="켬" OffContent="끔" MinWidth="0" IsEnabled="False" Visibility="Collapsed"
-                            Toggled="PowerToggled" AutomationProperties.Name="전원 버튼 표시등 켜기"/>
-              <Button x:Name="PowerSetup" Visibility="Collapsed" Click="PowerSetupClick" AutomationProperties.Name="전원 버튼 도우미 설정"
-                      ToolTipService.ToolTip="관리자 권한으로 전원 버튼 도우미를 한 번 설치합니다.">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <FontIcon Glyph="&#xEA18;" FontSize="14"/>
-                  <TextBlock Text="설정"/>
-                </StackPanel>
-              </Button>
-            </StackPanel>
-          </Grid>
-        </Border>
-        <TextBlock Style="{StaticResource CardDescription}" Margin="0,4,0,0" Text="충전 표시등, 카메라 표시등, Esc의 Fn 잠금 표시등은 노트북이 직접 정하므로 바꿀 수 없습니다."/>
-      </StackPanel>
+      <!-- The power button shows the performance mode; the user keeps it out of this page (2026-10-30). -->
+      <TextBlock Style="{StaticResource CardDescription}" Text="전원 버튼 불은 성능 모드를 보여 주므로 여기서 바꾸지 않습니다. 충전 표시등, 카메라 표시등, Esc의 Fn 잠금 표시등은 노트북이 직접 정합니다."/>
     </StackPanel>
   </ScrollViewer>
 </UserControl>
