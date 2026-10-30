@@ -36,6 +36,7 @@ install(FILES "${PROJECT_SOURCE_DIR}/Scripts/install-windows.ps1" "${PROJECT_SOU
         "${PROJECT_SOURCE_DIR}/Scripts/WindowsInstall.psm1" "${PROJECT_SOURCE_DIR}/Scripts/WindowsNpu.psm1" DESTINATION .)
 install(FILES "${PROJECT_SOURCE_DIR}/Scripts/WindowsDeviceRecovery.psm1" "${PROJECT_SOURCE_DIR}/Scripts/repair-windows-device.ps1" "${PROJECT_SOURCE_DIR}/Scripts/register-windows-device-recovery.ps1"
         "${PROJECT_SOURCE_DIR}/Scripts/repair-windows-microphone.ps1" DESTINATION .)
+install(FILES "${PROJECT_SOURCE_DIR}/Scripts/set-windows-power-led.ps1" "${PROJECT_SOURCE_DIR}/Scripts/register-windows-power-led.ps1" DESTINATION .)
 install(FILES "${PROJECT_SOURCE_DIR}/Scripts/repair-windows-capture.ps1" DESTINATION .)
 install(FILES "${PROJECT_SOURCE_DIR}/Resources/EQ/L.txt" "${PROJECT_SOURCE_DIR}/Resources/EQ/R.txt" DESTINATION EQ)
 add_test(NAME PersonalToolsDeviceRecoveryTests COMMAND powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${PROJECT_SOURCE_DIR}/Tests/WindowsDeviceRecoveryTests.ps1")

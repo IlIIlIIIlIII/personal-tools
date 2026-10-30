@@ -1,5 +1,9 @@
 # Windows 오디오 버전
 
+## 2026-10-30 조명
+
+- 메뉴 **조명**(화면 자동 끄기 아래)에서 이 노트북(Legion 9 18IAX10)의 키보드, 앞쪽 라이트바, 덮개 로고의 효과·색·속도와 밝기, 프로필(Fn+Space)을 바꿉니다. 설정은 노트북 펌웨어에 저장되어 앱을 닫아도 유지됩니다. Windows 동적 조명이 조명을 쓰고 있으면 이 노트북에서만 끄는 버튼을 보여 줍니다. 전원 버튼 표시등은 SYSTEM 도우미 작업으로 켜고 끕니다. 시안: https://claude.ai/artifact/6EANCaKQMaEjWsb5MN7Gz7, 동작과 측정: [windows-lighting.md](windows-lighting.md).
+
 ## 2026-10-23 화면 자동 끄기
 
 - 입력이 1분 없으면 MO32U24 두 대의 패널만 DDC/CI로 끄고 다음 입력에서 켭니다. Windows는 모니터가 켜진 것으로 보므로 창 배치와 렌더링이 그대로입니다. 메뉴 **화면 자동 끄기**(자동 HDR 아래)에서 사용 여부, 기다릴 시간, 끌 모니터를 고르고 바로 끌 수 있습니다. 시안: https://claude.ai/artifact/7dtoP5r9f84XYigQQUiJQE, 동작과 측정: [windows-display-idle.md](windows-display-idle.md).

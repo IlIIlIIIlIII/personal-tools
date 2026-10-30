@@ -20,6 +20,7 @@
         <NavigationViewItem Content="사운드" Tag="sound"><NavigationViewItem.Icon><FontIcon Glyph="&#xE767;"/></NavigationViewItem.Icon></NavigationViewItem>
         <NavigationViewItem Content="자동 HDR" Tag="hdr"><NavigationViewItem.Icon><FontIcon Glyph="&#xE7F4;"/></NavigationViewItem.Icon></NavigationViewItem>
         <NavigationViewItem Content="화면 자동 끄기" Tag="display-idle"><NavigationViewItem.Icon><FontIcon Glyph="&#xE708;"/></NavigationViewItem.Icon></NavigationViewItem>
+        <NavigationViewItem Content="조명" Tag="lighting"><NavigationViewItem.Icon><FontIcon Glyph="&#xE82F;"/></NavigationViewItem.Icon></NavigationViewItem>
         <NavigationViewItem x:Name="BridgeNav" Content="Antigravity 브릿지" Tag="antigravity"><NavigationViewItem.Icon><FontIcon Glyph="&#xE774;"/></NavigationViewItem.Icon></NavigationViewItem>
       </NavigationView.MenuItems>
       <NavigationView.FooterMenuItems>
@@ -33,6 +34,7 @@
         <local:SoundPage x:Name="SoundsPage" Visibility="Collapsed"/>
         <local:HdrPage x:Name="HdrsPage" Visibility="Collapsed"/>
         <local:DisplayIdlePage x:Name="IdlePage" Visibility="Collapsed"/>
+        <local:LightingPage x:Name="LightPage" Visibility="Collapsed"/>
         <local:AntigravityPage x:Name="BridgePage" Visibility="Collapsed"/>
         <local:DiagnosticsPage x:Name="DiagPage" Visibility="Collapsed"/>
       </Grid>

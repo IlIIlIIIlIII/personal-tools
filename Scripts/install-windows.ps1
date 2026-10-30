@@ -42,7 +42,7 @@ foreach ($endpoint in @($render,$capture)) {
         $key.Close()
     }
 }
-$payload = @('PersonalToolsAPO.dll','PersonalToolsSetup.exe','install-windows.ps1','uninstall-windows.ps1','WindowsInstall.psm1','WindowsDeviceRecovery.psm1','repair-windows-device.ps1','repair-windows-capture.ps1','repair-windows-microphone.ps1','register-windows-device-recovery.ps1','ui')
+$payload = @('PersonalToolsAPO.dll','PersonalToolsSetup.exe','install-windows.ps1','uninstall-windows.ps1','WindowsInstall.psm1','WindowsDeviceRecovery.psm1','repair-windows-device.ps1','repair-windows-capture.ps1','repair-windows-microphone.ps1','register-windows-device-recovery.ps1','set-windows-power-led.ps1','register-windows-power-led.ps1','ui')
 $signed = @('PersonalToolsAPO.dll','PersonalToolsSetup.exe','ui\PersonalToolsBridge.dll','ui\PersonalToolsWindows.exe','ui\PersonalToolsWindows.dll')
 # NPU inference runs in PersonalToolsNpuHost.exe beside the payload, never inside audiodg.
 if(Test-Path -LiteralPath (Join-Path $SourceDirectory 'npu\enabled.flag')) { $payload += @('npu','PersonalToolsNpuHost.exe'); $signed += 'PersonalToolsNpuHost.exe' }
@@ -128,6 +128,8 @@ try {
     if ($p.ExitCode -ne 0) { throw "Initial device/EQ configuration failed ($($p.ExitCode)). Check E:\Speaker or the package EQ folder for L.txt and R.txt." }
     foreach ($change in $changes) { Set-RegistryValue $change.Path $change.Name $change.Kind $change.Value }
     & (Join-Path $destination 'register-windows-device-recovery.ps1')
+    # The lighting page's power button switch; a failure here leaves the audio installation alone.
+    try { & (Join-Path $destination 'register-windows-power-led.ps1') } catch { Write-Warning "Power button LED helper not registered: $_" }
 } catch {
     $failure = $_
     try {

@@ -8,7 +8,7 @@ $directory = Join-Path $env:ProgramFiles 'PersonalTools'
 $backupPath = Join-Path $directory 'installation-backup.clixml'
 if (-not (Test-Path -LiteralPath $backupPath)) { throw 'No installation backup found. No audio settings changed.' }
 # Prevent a concurrent repair from re-applying effects during rollback.
-foreach ($name in @('PersonalTools Device Recovery','PersonalTools Microphone Recovery')) {
+foreach ($name in @('PersonalTools Device Recovery','PersonalTools Microphone Recovery','PersonalTools Power LED Off','PersonalTools Power LED On','PersonalTools Power LED Read')) {
     $task = Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue
     if ($task) {
         Disable-ScheduledTask -InputObject $task | Out-Null
@@ -16,6 +16,8 @@ foreach ($name in @('PersonalTools Device Recovery','PersonalTools Microphone Re
         Unregister-ScheduledTask -InputObject $task -Confirm:$false
     }
 }
+# Without its tasks the lighting page must offer the power button helper setup again.
+Remove-Item -LiteralPath (Join-Path $directory 'power-led-status.txt') -Force -ErrorAction SilentlyContinue
 $lock = [IO.File]::Open((Join-Path $directory 'device-recovery.lock'),'OpenOrCreate','ReadWrite','None')
 try {
 $backup = Import-Clixml -LiteralPath $backupPath
