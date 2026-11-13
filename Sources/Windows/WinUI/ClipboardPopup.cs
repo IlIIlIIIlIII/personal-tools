@@ -12,6 +12,7 @@ internal sealed class ClipboardPopup : Window
     private readonly ClipboardController controller;
     private readonly ClipboardPage page;
     private readonly ClipboardPanelNative native;
+    private readonly WindowDpiPlacement placement;
     private readonly DispatcherQueueTimer animation;
     private readonly Stopwatch animationClock = new();
     private readonly nint handle;
@@ -40,6 +41,7 @@ internal sealed class ClipboardPopup : Window
             presenter.IsMaximizable = false; presenter.IsResizable = false;
         }
         AppWindow.IsShownInSwitchers = false;
+        placement = new WindowDpiPlacement(handle, AppWindow, noFrame: true);
         page.ActualThemeChanged += (_, _) => native.ApplySystemAppearance(page.ActualTheme == ElementTheme.Dark);
         native.ApplySystemAppearance(page.ActualTheme == ElementTheme.Dark);
         animation = DispatcherQueue.CreateTimer(); animation.Interval = TimeSpan.FromMilliseconds(16);
@@ -71,7 +73,7 @@ internal sealed class ClipboardPopup : Window
     {
         ++presentation;
         animation.Stop(); native.ClearClip(); native.ApplySystemAppearance(page.ActualTheme == ElementTheme.Dark);
-        AppWindow.MoveAndResize(new RectInt32(bounds.X, bounds.Y, bounds.Width, bounds.Height));
+        placement.MoveAndResize(new RectInt32(bounds.X, bounds.Y, bounds.Width, bounds.Height));
         bool motion = animate && new Windows.UI.ViewManagement.UISettings().AnimationsEnabled;
         if (motion)
         {
@@ -123,6 +125,6 @@ internal sealed class ClipboardPopup : Window
     }
     public async Task ShutdownAsync()
     {
-        exiting = true; Hide(); native.Dispose(); await page.ShutdownAsync(); Close();
+        exiting = true; Hide(); native.Dispose(); placement.Dispose(); await page.ShutdownAsync(); Close();
     }
 }
