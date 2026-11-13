@@ -7,7 +7,7 @@
 # only the microphone drops for ~8 s. Only if that fails does it stop Windows Audio and the vendor
 # helpers and restart the device with pnputil, which silences all playback for ~9 s.
 [CmdletBinding()]
-param([switch]$CheckOnly)
+param([switch]$CheckOnly, [switch]$UseCyclePort)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot 'WindowsInstall.psm1') -Force
@@ -64,13 +64,18 @@ try {
     }
     if ($CheckOnly) { Report ("Would restart {0}: the microphone input has stalled." -f $device); return }
     [IO.File]::WriteAllLines($historyPath, [string[]](@($history | ForEach-Object { $_.ToString('o') }) + $now.ToString('o')))
-    Report ("Recovering microphone at {0}: the input stalled; reconnecting {1}." -f $now.ToString('o'), $device)
-    # 0: back; 20/21: device or hub not found; 22: the hub refused; 23: not back in 30 s;
-    # 24: back, but not every interface/endpoint started yet (no reason to stop Windows Audio).
-    $cycle = Invoke-Checked (Join-Path $directory 'PersonalToolsSetup.exe') @('--cycle-port', "`"$device`"")
-    Write-RunLog "cycle port $cycle"
-    if ($cycle -eq 0 -or $cycle -eq 24) { Report ("Recovered microphone at {0} by reconnecting its USB port." -f (Get-Date -Format o)); return }
-    Report ("Recovering microphone at {0}: reconnecting the USB port failed ({1}); restarting Windows Audio and {2}." -f (Get-Date -Format o), $cycle, $device)
+    if ($UseCyclePort) {
+        Report ("Recovering microphone at {0}: the input stalled; reconnecting {1}." -f $now.ToString('o'), $device)
+        # 0: back; 20/21: device or hub not found; 22: the hub refused; 23: not back in 30 s;
+        # 24: back, but not every interface/endpoint started yet (no reason to stop Windows Audio).
+        $cycle = Invoke-Checked (Join-Path $directory 'PersonalToolsSetup.exe') @('--cycle-port', "`"$device`"")
+        Write-RunLog "cycle port $cycle"
+        if ($cycle -eq 0 -or $cycle -eq 24) { Report ("Recovered microphone at {0} by reconnecting its USB port." -f (Get-Date -Format o)); return }
+        Report ("Recovering microphone at {0}: reconnecting the USB port failed ({1}); restarting Windows Audio and {2}." -f (Get-Date -Format o), $cycle, $device)
+    } else {
+        Write-RunLog 'cycle port skipped (isolated)'
+        Report ("Recovering microphone at {0}: the input stalled; restarting Windows Audio and {1}." -f $now.ToString('o'), $device)
+    }
     $folder = Get-DeviceHelperFolder $device
     $closed = @(); $stopped = @()
     $audio = Get-Service Audiosrv
