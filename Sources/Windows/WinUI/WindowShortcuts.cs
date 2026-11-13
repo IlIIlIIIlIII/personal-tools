@@ -6,7 +6,8 @@ using System.Text;
 namespace PersonalTools;
 
 // Key is the slot index shown as keycaps before KeyText; -1 shows Title alone.
-public sealed record WindowSwitchNotice(string Title, string Detail, WindowSlot? Slot, bool Success, int Key = -1, string KeyText = "");
+// Caution marks a problem rather than guidance (a warning icon instead of info or an empty key).
+public sealed record WindowSwitchNotice(string Title, string Detail, WindowSlot? Slot, bool Success, int Key = -1, string KeyText = "", bool Caution = false);
 
 // Owns the low-level keyboard hook and the window close/rename hooks on one
 // message thread. Only Win(+Shift)+1-4/Q/W/E/R are consumed; other keys pass
@@ -63,7 +64,7 @@ internal sealed class WindowShortcuts : IDisposable
                 if (message.Id == ActionMessage)
                 {
                     try { Perform((int)message.W, message.L != 0); }
-                    catch (Exception error) { Notice?.Invoke(new("창 빠른 전환을 처리하지 못했습니다", error.Message, null, false)); }
+                    catch (Exception error) { Notice?.Invoke(new("창 빠른 전환을 처리하지 못했습니다", error.Message, null, false, Caution: true)); }
                 }
                 else { TranslateMessage(ref message); DispatchMessage(ref message); }
             }
@@ -132,7 +133,7 @@ internal sealed class WindowShortcuts : IDisposable
         {
             slots.ClearHandle(target.Handle);
             Changed?.Invoke();
-            Notice?.Invoke(new($"Win+{key} 창이 닫혀 있습니다", "등록을 해제했습니다. 열려 있는 창에서 다시 등록해 주세요.", null, false));
+            Notice?.Invoke(new($"Win+{key} 창이 닫혀 있습니다", "등록을 해제했습니다. 열려 있는 창에서 다시 등록해 주세요.", null, false, slot, "창이 닫혀 있습니다", Caution: true));
             return;
         }
         if (!Focus(target.Handle))
